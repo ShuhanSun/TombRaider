@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v34.0 Final Polish)</title>
+    <title>寻龙诀:绝地求生 (v35.0 Fixed)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -23,7 +23,7 @@
         #level-num { font-size: 24px; color: #ffd700; display: block; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         #artifact-bar { margin-top: 5px; color: #f1c40f; }
         
-        /* Item Bar (Top Left below HP) */
+        /* Item Bar */
         #item-bar { position: absolute; top: 70px; left: 20px; display: flex; gap: 10px; }
         .item-slot { 
             background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; 
@@ -32,6 +32,13 @@
             animation: fadeIn 0.5s;
         }
         .item-slot span { font-size: 18px; }
+        
+        /* Buff Icons */
+        #buff-bar { position: absolute; top: 110px; left: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .buff { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; border-left: 3px solid; font-size: 14px; color: #fff; animation: fadeIn 0.5s; }
+        .buff-hoof { border-color: #a1887f; }
+        .buff-candle { border-color: #ff5252; }
+        .buff-jade { border-color: #a5d6a7; color: #a5d6a7; }
         
         /* Message Toast */
         #msg-box { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 26px; color: #fff; font-weight: bold; text-shadow: 0 0 10px #000; opacity: 0; transition: opacity 0.5s; z-index: 10; pointer-events: none; }
@@ -106,11 +113,12 @@
         <div id="hp-bar">❤❤❤❤❤</div>
         <div id="level-info">
             <span id="level-num">第 1 层</span>
-            <div style="font-size:16px; margin-top:4px; color:#ffd700"><span id="map-name">沙海迷冢</span></div>
+            <!-- Removed Trap/Map Name from here as requested -->
             <div id="artifact-bar"><span id="art-label">冥器</span>: 0/10</div>
         </div>
     </div>
     <div id="item-bar"></div>
+    <div id="buff-bar"></div>
     <div id="msg-box"></div>
     <div id="level-title-box"><div id="level-title-text"></div></div>
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
@@ -154,7 +162,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V34.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V35.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -172,8 +180,8 @@
 
 <script>
 /**
- * TombRaider_Survival v34.0 Final Polish
- * Updates: Traps on Walls only, Top Item Bar, Gold/Red Text Colors, Hide Sprinter Name.
+ * TombRaider_Survival v35.0 Fixed
+ * Updates: Slower Player Speed, Empty Coffin Text, Removed Map Name from Top-Right, Visible Feet Color.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -220,7 +228,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V34.0",
+        ver: "绝地求生 V35.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层",
@@ -260,7 +268,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V34.0",
+        ver: "Survival V35.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s",
@@ -414,12 +422,8 @@ class GroundItem extends Entity {
         const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         ctx.font = "24px serif"; ctx.textAlign = "center";
         ctx.fillText(iconMap[iKey], 0, yOff);
-        
-        // GOLD TEXT for special items
-        ctx.fillStyle = '#ffd700'; ctx.font = "bold 14px serif";
-        ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
-        ctx.fillText(LANG[curLang].items[iKey].n, 0, yOff - 25);
-        ctx.shadowBlur = 0; 
+        ctx.fillStyle = '#fff'; ctx.font = "12px serif";
+        ctx.fillText(LANG[curLang].items[iKey].n, 0, yOff - 20); 
         
         ctx.shadowBlur=15; ctx.shadowColor=colors[iKey];
         ctx.beginPath(); ctx.arc(0,10,8,0,6.28); ctx.fillStyle=colors[iKey]; ctx.fill(); ctx.shadowBlur=0;
@@ -448,7 +452,9 @@ class Coffin extends Entity {
                  Game.addText(this.x, this.y, LANG[curLang].msgs.trap, '#f44336');
                  AudioSys.playTrap(0);
             }
-            else { Game.addText(this.x, this.y, LANG[curLang].msgs.empty, '#aaa'); }
+            else { 
+                Game.addText(this.x, this.y, LANG[curLang].msgs.empty, '#aaa'); 
+            }
         }, 600);
     }
     draw(ctx) {
@@ -457,7 +463,8 @@ class Coffin extends Entity {
             ctx.fillStyle = '#aaa'; ctx.font='12px serif'; ctx.textAlign='center';
             ctx.fillText(LANG[curLang].labels.coffin, 0, -50);
         }
-        ctx.save(); ctx.rotate(Math.PI/2); 
+        ctx.save();
+        ctx.rotate(Math.PI/2); 
         if(!this.opened){
             ctx.fillStyle = '#757575'; ctx.beginPath();
             ctx.moveTo(-18, -35); ctx.lineTo(18, -35); ctx.lineTo(14, 35); ctx.lineTo(-14, 35); ctx.closePath(); ctx.fill();
@@ -507,7 +514,7 @@ class Zombie extends Entity {
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
         const isSprinter = this.zType === 1;
-        // REMOVED Sprinter Name display as requested
+        if(isSprinter) { ctx.fillStyle = '#ff5252'; ctx.font='12px serif'; ctx.textAlign='center'; ctx.fillText(LANG[curLang].labels.sprinter, 0, -50); }
         
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
         ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
@@ -544,8 +551,6 @@ class Trap extends Entity {
         ctx.fillStyle=this.color; ctx.fillRect(-15,-20,30,20); 
         ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-15,-20); ctx.lineTo(-18,0); ctx.lineTo(18,0); ctx.lineTo(15,-20); ctx.fill();
         ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
-        
-        // RED TEXT for Trap Name
         ctx.fillStyle = '#ff5252'; ctx.font = 'bold 12px serif'; ctx.textAlign='center'; 
         ctx.fillText(LANG[curLang].trapNames[this.lvlIdx], 0, -45);
     }
@@ -581,7 +586,10 @@ class Player extends Entity {
         if(this.buffs.candle>0) this.buffs.candle-=dt;
         if(this.buffs.jade>0) this.buffs.jade-=dt;
         
-        let s=180; if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        // Slower base speed for better control
+        let s=160; 
+        if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        
         if(Input.active){
             const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
             if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
@@ -603,6 +611,12 @@ class Player extends Entity {
         ctx.rotate(Math.atan2(Input.y,Input.x));
         const lOffset = Math.sin(this.stepPhase) * 6;
         ctx.fillStyle='#3e2723'; ctx.fillRect(-8, -5 + lOffset, 6, 12); ctx.fillRect(2, -5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 12);
+        
+        // Boots (Visible Color)
+        ctx.fillStyle='#d7ccc8'; 
+        ctx.fillRect(-8, 5 + lOffset, 6, 4); 
+        ctx.fillRect(2, 5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 4);
+        
         ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18); ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
         ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
         ctx.fillStyle='#ffecb3';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
@@ -629,8 +643,6 @@ const MapSys = {
                 }
             }
         }
-        const last = rms[rms.length-1];
-        for(let Y=last.y; Y<last.y+last.h; Y++) for(let X=last.x; X<last.x+last.w; X++) this.t[Y*this.w+X] = 2;
         return rms;
     },
     get: function(px,py){
@@ -707,7 +719,6 @@ const Game = {
         if(this.lvl>=10){ this.victory(); }
         else {
             this.saved={hp:this.p.hp}; 
-            // Clear temp items (e.g. if we wanted to clear buffs, but let's keep them for now)
             this.load(this.lvl+1);
         }
     },
@@ -722,13 +733,12 @@ const Game = {
         el.className = 'item-slot';
         el.innerHTML = `<span>${icon}</span>`;
         bar.appendChild(el);
-        // Auto remove after 15s (approx logic handled by buffs, visual only here)
         setTimeout(() => el.remove(), 15000);
     },
 
     load: function(l){
         this.lvl=l; this.ents=[]; this.texts=[]; this.exit=0; this.artifactPos = null;
-        document.getElementById('item-bar').innerHTML = ''; // Clear item bar on new level
+        document.getElementById('item-bar').innerHTML = ''; 
         
         const rms=MapSys.gen(l), s=rms[0], e=rms[rms.length-1];
         this.p=new Player((s.x+s.w/2)*CONFIG.TILE, (s.y+s.h/2)*CONFIG.TILE);
@@ -764,23 +774,20 @@ const Game = {
              this.ents.push(new Coffin(p.x, p.y, c));
         });
         
-        // Traps: Only on walls!
         const trapCount = Math.floor(1 + Math.pow(l, 1.2)); 
-        const lData = LEVELS_DATA[Math.min(l-1, 9)];
         let trapsPlaced = 0;
+        const lData = LEVELS_DATA[Math.min(l-1, 9)];
         while(trapsPlaced < trapCount) {
-            const r=rms[Math.floor(Math.random()*rms.length)];
-            // Pick a wall spot: Top edge of random room
-            const tx = (r.x + 1 + Math.floor(Math.random()*(r.w-2))) * CONFIG.TILE;
-            const ty = r.y * CONFIG.TILE; // Top wall
-            
-            let tType = lData.type;
-            if(tType === 'MIX') tType = Object.keys(PROJ_TYPES)[Math.floor(Math.random()*4)];
-            
-            this.ents.push(new Trap(tx, ty, l-1));
-            trapsPlaced++;
+             const r=rms[Math.floor(Math.random()*rms.length)];
+             const tx = (r.x + 1 + Math.floor(Math.random()*(r.w-2))) * CONFIG.TILE;
+             const ty = r.y * CONFIG.TILE; 
+             let tType = lData.type;
+             if(tType === 'MIX') tType = Object.keys(PROJ_TYPES)[Math.floor(Math.random()*4)];
+             this.ents.push(new Trap(tx, ty, l-1));
+             trapsPlaced++;
         }
         
+        this.exitRoom = e;
         this.exitPos = {x:(e.x+e.w/2)*CONFIG.TILE, y:e.y*CONFIG.TILE};
         
         for(let i=0;i<4+l*2;i++){
@@ -815,12 +822,10 @@ const Game = {
             this.msg(LANG[curLang].msgs.hole, "#0f0"); 
             this.updateHUD();
             
-            // Flood exit room
+            // Flood
             const r = this.exitRoom;
-            const erX = Math.floor(this.exitPos.x/CONFIG.TILE);
-            const erY = Math.floor(this.exitPos.y/CONFIG.TILE);
-             for(let y=erY-5; y<erY+5; y++){
-                for(let x=erX-5; x<erX+5; x++){
+            for(let y=r.y; y<r.y+r.h; y++){
+                for(let x=r.x; x<r.x+r.w; x++){
                      if(MapSys.get(x*CONFIG.TILE, y*CONFIG.TILE) === TERRAIN.FLOOR) {
                          MapSys.t[y*MapSys.w+x] = 2;
                      }
@@ -851,7 +856,7 @@ const Game = {
     msg: function(t,c){const b=document.getElementById('msg-box');b.innerHTML=t;b.style.color=c;b.classList.add('msg-show');setTimeout(()=>b.classList.remove('msg-show'),2000);},
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
-        document.getElementById('level-num').innerText = LANG[curLang].levelNames[Math.min(this.lvl-1,9)]; // Map Name
+        document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
         document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
@@ -869,7 +874,12 @@ const Game = {
         if(this.pause) return;
         if(this.shake>0)this.shake*=.9;
         
-        const dt=0.016;
+        const bb = document.getElementById('buff-bar'); bb.innerHTML='';
+        if(this.p.buffs.hoof>0) bb.innerHTML+=`<div class="buff buff-hoof">🐴 ${Math.ceil(this.p.buffs.hoof)}s</div>`;
+        if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 ${Math.ceil(this.p.buffs.jade)}s</div>`;
+        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-compass">🧭 ON</div>`;
+        
+        const dt=0.016; // Fixed step for consistency
         this.ents = this.ents.filter(e=>!e.dead);
         this.ents.sort((a,b)=>a.y-b.y);
         
@@ -904,17 +914,17 @@ const Game = {
                 const t = MapSys.t[y*MapSys.w+x];
                 const px=x*CONFIG.TILE, py=y*CONFIG.TILE;
                 
-                if(t==0){ // Floor
+                if(t==0){ 
                     ctx.fillStyle='#2d241e'; ctx.fillRect(px,py,50,50);
                     ctx.fillStyle='rgba(0,0,0,0.1)'; if((x+y)%5===0) ctx.fillRect(px+10,py+10,5,5);
                 } 
-                else if(t==2) { // Water
+                else if(t==2) { 
                     ctx.fillStyle='#01579b';ctx.fillRect(px,py,50,50);
                     ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
                     ctx.beginPath(); const off = Math.sin(now/400 + x/2)*10;
                     ctx.moveTo(px, py+25+off); ctx.lineTo(px+50, py+25-off); ctx.stroke();
                 }
-                else { // Wall
+                else { 
                     ctx.fillStyle = wallCol; ctx.fillRect(px, py, 50, 50);
                     ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
                     ctx.beginPath();
