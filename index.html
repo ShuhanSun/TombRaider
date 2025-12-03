@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v43.0 Mechanic Update)</title>
+    <title>寻龙诀:绝地求生 (v44.0 Enhanced)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -15,6 +15,17 @@
         #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; display: none; } 
         @media (pointer: coarse) { #joystick-zone { display: block; } }
         #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(180, 140, 90, 0.9); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.3); }
+        
+        /* Sprint Button */
+        #sprint-btn {
+            position: absolute; bottom: 60px; right: 220px; width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; pointer-events: auto; display: none;
+            justify-content: center; align-items: center; font-size: 30px; color: #fff;
+            user-select: none;
+        }
+        @media (pointer: coarse) { #sprint-btn { display: flex; } }
+        #sprint-btn:active { background: rgba(255, 215, 0, 0.3); border-color: #ffd700; }
         
         /* HUD */
         .hud { position: absolute; color: #d4c4a8; text-shadow: 2px 2px 4px #000; pointer-events: none; font-weight: bold; }
@@ -123,7 +134,10 @@
     <div id="buff-bar"></div>
     <div id="msg-box"></div>
     <div id="level-title-box"><div id="level-title-text"></div></div>
+    
+    <!-- Controls -->
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="sprint-btn">🏃</div>
 </div>
 
 <!-- Item Modal (Artifacts Only) -->
@@ -164,7 +178,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V43.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V44.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -182,11 +196,11 @@
 
 <script>
 /**
- * TombRaider_Survival v43.0 Mechanic Update
- * Updates: Blue Zombie attack cooldown, Red Zombie explode on touch, Varied Wall Colors.
+ * TombRaider_Survival v44.0 Ultimate Enhanced
+ * Updates: Sprint Button, Green Zombie (Ranged), Compass Logic.
  */
 
-const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
+const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140, GREEN_SPD: 40 };
 const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
 
 const LEVEL_NAMES_CN = ["沙海迷冢", "千纹机关廊", "青铜兽影厅", "巨鼎炼魂室", "石骨迷宫", "荧光棺河", "九字封印井", "暗影葬主殿", "帝王沉眠室", "永劫天陨塔"];
@@ -203,19 +217,7 @@ const LEVELS_DATA = [
     { delay: 1.0, type: 'ARROW', col: '#212121' }, { delay: 2.0, type: 'MIX', col: '#b71c1c' }
 ];
 
-// Varied Wall Colors per Level
-const WALL_COLORS = [
-    '#5d4037', // 1: Brown
-    '#424242', // 2: Grey
-    '#3e2723', // 3: Dark Wood
-    '#263238', // 4: Blue Grey
-    '#b71c1c', // 5: Dark Red
-    '#1a237e', // 6: Dark Blue
-    '#004d40', // 7: Teal
-    '#311b92', // 8: Purple
-    '#212121', // 9: Black
-    '#ffd700'  // 10: Goldish
-];
+const WALL_COLORS = ['#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'];
 
 const ARTIFACTS = [
     {n: "战国玉蝉", en: "Jade Cicada", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。", end: "Keeps the body from decaying."},
@@ -235,14 +237,15 @@ const PROJ_TYPES = {
     ARROW: { spd: 350, size: 3, col: '#eee', trail: true },
     STONE: { spd: 180, size: 10, col: '#795548', trail: false },
     FIRE: { spd: 220, size: 6, col: '#ff5722', trail: true },
-    LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
+    LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' },
+    VENOM: { spd: 180, size: 5, col: '#00ff00', trail: true } // For green zombie
 };
 
 // --- Localization ---
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V43.0",
+        ver: "绝地求生 V44.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -277,12 +280,12 @@ const LANG = {
         },
         levelNames: LEVEL_NAMES_CN,
         trapNames: TRAP_NAMES_CN,
-        labels: { coffin: "石棺", exit: "盗洞", sprinter: "疾行尸" },
+        labels: { coffin: "石棺", exit: "盗洞", sprinter: "疾行尸", green: "绿毒尸" },
         exitModal: { t: "发现盗洞", d: "是否进入下一层？<br>(进入后无法返回)", yes: "进入下一层" }
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V43.0",
+        ver: "Survival V44.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -317,7 +320,7 @@ const LANG = {
         },
         levelNames: LEVEL_NAMES_EN,
         trapNames: TRAP_NAMES_EN,
-        labels: { coffin: "Coffin", exit: "Exit", sprinter: "Sprinter" },
+        labels: { coffin: "Coffin", exit: "Exit", sprinter: "Sprinter", green: "Spitter" },
         exitModal: { t: "Exit Found", d: "Enter next level?<br>(No return)", yes: "Enter" }
     }
 };
@@ -374,8 +377,7 @@ const AudioSys = {
     playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
     playHurt: function() { 
         const now = Date.now();
-        if(now - this.lastHurt > 1000) { // Debounce sound
-            // Soft Pain Sound (Muffled Sine + Low Triangle)
+        if(now - this.lastHurt > 1000) { 
             if(this.ctx) {
                 this.tone(120, 'sine', 0.2, 0.5, 80); 
                 setTimeout(()=>this.tone(60, 'triangle', 0.3, 0.4), 50);
@@ -387,7 +389,7 @@ const AudioSys = {
 };
 
 // --- Input ---
-const Input = { x:0, y:0, active:false, keys:{} };
+const Input = { x:0, y:0, active:false, keys:{}, sprint:false };
 
 (function(){
     // Touch
@@ -407,13 +409,20 @@ const Input = { x:0, y:0, active:false, keys:{} };
     window.addEventListener('mousemove',e=>{if(Input.m)h(e)});
     window.addEventListener('mouseup',e=>{if(Input.m){Input.m=0;h(e,1)}});
 
+    // Sprint Button (Touch)
+    const sb = document.getElementById('sprint-btn');
+    sb.addEventListener('touchstart',e=>{e.preventDefault();Input.sprint=true;sb.style.background='rgba(255,215,0,0.3)';},{passive:false});
+    sb.addEventListener('touchend',e=>{e.preventDefault();Input.sprint=false;sb.style.background='rgba(255,255,255,0.1)';},{passive:false});
+
     // Keyboard
     window.addEventListener('keydown', e => {
         Input.keys[e.code] = true;
+        if(e.code === 'ShiftLeft') Input.sprint = true;
         updateKeyDir();
     });
     window.addEventListener('keyup', e => {
         Input.keys[e.code] = false;
+        if(e.code === 'ShiftLeft') Input.sprint = false;
         updateKeyDir();
     });
 
@@ -565,16 +574,17 @@ class Coffin extends Entity {
 
 class Zombie extends Entity {
     constructor(x,y,type=0){super(x,y,'zombie');
-        this.zType = type; this.spd = type===1 ? CONFIG.SPRINTER_SPD : CONFIG.ZOMBIE_SPD + Game.lvl*5;
+        this.zType = type; // 0: Blue, 1: Red (Sprinter), 2: Green (Spitter)
+        this.spd = type===1 ? CONFIG.SPRINTER_SPD : (type===2 ? CONFIG.GREEN_SPD : CONFIG.ZOMBIE_SPD + Game.lvl*5);
         this.dir = Math.random()*6.28; this.changeDirT = 0;
-        this.attackCD = 0; // Attack cooldown
+        this.attackCD = 0;
     }
     update(dt,p) {
         const oldX=this.x, oldY=this.y;
         const dx=p.x-this.x, dy=p.y-this.y, d=Math.hypot(dx,dy);
         let repel = p.buffs.hoof > 0;
         
-        if(this.zType === 0) { // Blue Zombie
+        if(this.zType === 0 || this.zType === 2) { // Blue or Green
             let active = d<200 || (Input.active && d<350);
             if(active || repel) {
                 let tx=dx, ty=dy, s=this.spd;
@@ -586,13 +596,26 @@ class Zombie extends Entity {
                 }
             }
             
-            if(this.attackCD > 0) this.attackCD -= dt;
-            if(!repel && d<20 && this.attackCD <= 0) {
-                p.hit();
-                AudioSys.playAttack();
-                this.attackCD = 1.0; // 1s cooldown
+            // Blue Attack
+            if(this.zType === 0) {
+                if(this.attackCD > 0) this.attackCD -= dt;
+                if(!repel && d<20 && this.attackCD <= 0) {
+                    p.hit(); AudioSys.playAttack(); this.attackCD = 1.0; 
+                }
             }
-        } else { // Red Sprinter (Explodes)
+            
+            // Green Attack (Spit)
+            if(this.zType === 2) {
+                this.attackCD -= dt;
+                if(!repel && d < 250 && this.attackCD <= 0) {
+                    const ang = Math.atan2(dy, dx);
+                    Game.spawn(new Projectile(this.x, this.y, ang, 'VENOM'));
+                    AudioSys.playTrap(d);
+                    this.attackCD = 2.0 + Math.random();
+                }
+            }
+
+        } else { // Red Sprinter
             this.changeDirT -= dt;
             if(this.changeDirT <= 0) { this.changeDirT = 1.0 + Math.random(); this.dir = Math.random() * 6.28; }
             let vx = Math.cos(this.dir) * this.spd; let vy = Math.sin(this.dir) * this.spd;
@@ -601,9 +624,9 @@ class Zombie extends Entity {
             
             if(!repel && d<20) {
                 p.hit();
-                Game.spawn(new Effect(this.x, this.y, 'burst')); // Explosion
+                Game.spawn(new Effect(this.x, this.y, 'burst')); 
                 AudioSys.playAttack();
-                this.dead = 1; // Suicide
+                this.dead = 1; 
             }
         }
         this.hop = Math.abs(Math.sin(Date.now()/(this.zType===1?100:200)))*-8;
@@ -611,14 +634,22 @@ class Zombie extends Entity {
     draw(ctx){
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
-        const isSprinter = this.zType === 1;
+        
+        let color = '#283593'; // Blue
+        if(this.zType === 1) color = '#b71c1c'; // Red
+        if(this.zType === 2) color = '#2e7d32'; // Green
         
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
-        ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
-        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; ctx.fillRect(-12,-25,24,25); // Robe
+        ctx.fillStyle = this.zType===1 ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
+        
+        ctx.fillStyle = color; ctx.fillRect(-12,-25,24,25); // Robe
         ctx.fillStyle='#e0e0e0'; ctx.beginPath(); ctx.arc(0,-30,9,0,6.28); ctx.fill(); // Head
-        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; ctx.fillRect(-14, -28, 6, 20); ctx.fillRect(8, -28, 6, 20); // Arms
+        ctx.fillStyle = color; ctx.fillRect(-14, -28, 6, 20); ctx.fillRect(8, -28, 6, 20); // Arms
         ctx.fillStyle='#ffea00'; ctx.fillRect(-3,-38,6,12); // Tag
+        
+        if(this.zType === 2) { // Green particle
+             ctx.fillStyle='rgba(0,255,0,0.5)'; ctx.beginPath(); ctx.arc(0,0,15,0,6.28); ctx.fill();
+        }
     }
 }
 
@@ -683,17 +714,32 @@ class Player extends Entity {
         if(this.buffs.candle>0) this.buffs.candle-=dt;
         if(this.buffs.jade>0) this.buffs.jade-=dt;
         
-        let s=160; if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        const oldX=this.x, oldY=this.y;
+        let s=160; 
+        if(Input.sprint) s *= 1.5; // Sprint!
+        if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        
         if(Input.active){
             const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
+            
             if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
             if(MapSys.get(this.x,ny)!==TERRAIN.WALL)this.y=ny;
+            
+            // Coffin Collision
+            Game.ents.forEach(e => {
+                if(e.type === 'coffin') {
+                    if(Math.hypot(this.x-e.x, this.y-e.y) < 30) {
+                        this.x = oldX; this.y = oldY;
+                    }
+                }
+            });
+            
             this.stepPhase += dt * 10;
             this.walkT+=dt; if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
         } else { this.stepPhase = 0; }
     }
     hit(){
-        if(this.inv>0 || this.buffs.hoof>0 || this.buffs.jade>0)return; // Jade immune
+        if(this.inv>0 || this.buffs.hoof>0 || this.buffs.jade>0)return; 
         this.hp--; this.inv=1.5; Game.shake=10; AudioSys.playHurt();
         Game.updateHUD(); Game.msg(LANG[curLang].msgs.hurt,"#f00");
         if(this.hp<=0)Game.over();
@@ -884,7 +930,9 @@ const Game = {
         for(let i=0;i<4+l*2;i++){
             const r=rms[Math.floor(Math.random()*rms.length)];
             const isSprinter = Math.random() < 0.2 ? 1 : 0;
-            this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, isSprinter));
+            const isGreen = Math.random() < 0.1 ? 2 : 0;
+            const zType = isSprinter ? 1 : (isGreen ? 2 : 0);
+            this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, zType));
         }
         this.updateHUD(); 
         
