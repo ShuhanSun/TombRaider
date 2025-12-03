@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>寻龙诀:绝地求生 (v23.1 Fix)</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
+        canvas { display: block; }
+        
+        /* UI Layer */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        /* Joystick */
+        #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; }
+        #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(180, 140, 90, 0.9); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.3); }
+        
+        /* HUD */
+        .hud { position: absolute; color: #d4c4a8; text-shadow: 2px 2px 4px #000; pointer-events: none; font-weight: bold; }
+        #top-bar { top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        #hp-bar { font-size: 32px; color: #b71c1c; letter-spacing: 2px; filter: drop-shadow(0 0 5px #b71c1c); }
+        #level-info { text-align: right; font-size: 16px; line-height: 1.5; color: #aaa; }
+        #level-num { font-size: 24px; color: #ffd700; display: block; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        #artifact-bar { margin-top: 5px; color: #f1c40f; }
+        
+        /* Buff Icons */
+        #buff-bar { position: absolute; top: 80px; left: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .buff { background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px; border-left: 3px solid; font-size: 14px; color: #fff; animation: fadeIn 0.5s; }
+        .buff-hoof { border-color: #a1887f; }
+        .buff-candle { border-color: #ff5252; }
+        .buff-jade { border-color: #a5d6a7; color: #a5d6a7; }
+        
+        /* Message Toast */
+        #msg-box { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 26px; color: #fff; font-weight: bold; text-shadow: 0 0 10px #000; opacity: 0; transition: opacity 0.5s; z-index: 10; pointer-events: none; }
+        .msg-show { opacity: 1 !important; }
+
+        /* Fullscreen Overlays */
+        .overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            z-index: 200; pointer-events: auto; 
+            display: none; opacity: 0; transition: opacity 0.5s;
+        }
+        .overlay.active { display: flex; opacity: 1; }
+        
+        /* Item Card */
+        #item-card {
+            background: linear-gradient(145deg, #1a120b, #2c1e16); border: 2px solid #8d6e63;
+            padding: 30px; border-radius: 15px; text-align: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); max-width: 80%; width: 300px;
+        }
+        #item-icon { font-size: 80px; margin-bottom: 20px; display: block; animation: floatIcon 3s ease-in-out infinite; }
+        #item-title { color: #ffd700; font-size: 32px; margin: 0 0 15px 0; font-family: "Times New Roman", serif; border-bottom: 1px solid #5d4037; padding-bottom: 10px; }
+        #item-desc { color: #d7ccc8; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
+        .btn { padding: 12px 35px; font-size: 20px; background: #3e2723; color: #ffd700; border: 1px solid #8d6e63; cursor: pointer; font-family:serif; pointer-events: auto; user-select: none; }
+        .btn:active { transform: scale(0.95); }
+
+        /* End Screens */
+        #end-title { font-size: 60px; color: #d32f2f; font-family: "Times New Roman"; margin-bottom: 20px; text-shadow: 0 0 20px #f00; }
+        #win-title { font-size: 60px; color: #ffd700; font-family: "Times New Roman"; margin-bottom: 20px; text-shadow: 0 0 20px #ff0; }
+        
+        /* Start Screen */
+        #start-screen { background: #080808; z-index: 100; text-align: center; }
+        h1 { font-size: 56px; margin: 0 0 10px 0; color: #ffd700; text-shadow: 0 0 25px rgba(212, 160, 23, 0.6); font-family: "Times New Roman", serif; letter-spacing: 8px; }
+        
+        @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes fadeIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="ui-layer">
+    <div id="top-bar" class="hud">
+        <div id="hp-bar">❤❤❤❤❤</div>
+        <div id="level-info">
+            <span id="level-num">第 1 层</span>
+            <div style="font-size:14px; margin-top:4px;">机关: <span id="trap-name" style="color:#ff5252">连弩塔</span></div>
+            <div id="artifact-bar">冥器: 0/10</div>
+        </div>
+    </div>
+    <div id="buff-bar"></div>
+    <div id="msg-box"></div>
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+</div>
+
+<!-- Item Modal -->
+<div id="item-modal" class="overlay">
+    <div id="item-card">
+        <span id="item-icon">📦</span>
+        <h2 id="item-title">物品</h2>
+        <p id="item-desc">描述</p>
+        <button class="btn" onclick="Game.closeModal()">收入囊中</button>
+    </div>
+</div>
+
+<!-- Game Over Screen -->
+<div id="game-over-modal" class="overlay">
+    <h2 id="end-title">胜败乃兵家常事</h2>
+    <p style="color:#ccc; margin-bottom:30px">大侠请重新来过</p>
+    <button class="btn" onclick="Game.restart()">再探古墓</button>
+</div>
+
+<!-- Victory Screen -->
+<div id="victory-modal" class="overlay">
+    <h2 id="win-title">摸金校尉 凯旋</h2>
+    <div style="font-size:80px; margin-bottom:20px">🏆</div>
+    <p style="color:#ffd700; font-size:20px; margin-bottom:30px">集齐冥器，逃出生天！</p>
+    <button class="btn" onclick="Game.restart()">再来一局</button>
+</div>
+
+<!-- Start Screen -->
+<div id="start-screen" class="overlay active">
+    <h1>寻龙诀</h1>
+    <p style="color:#888; letter-spacing: 2px;">V23.1 FIX</p>
+    <!-- High Contrast Info Box -->
+    <div style="text-align: left; background: #1a1a1a; padding: 25px; margin-top:30px; border-radius: 8px; border: 2px solid #3e2723; max-width: 85%; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+        <p>🧟 <span style="color:#e57373">疾行尸</span>: 极速乱窜，触之伤身</p>
+        <p>🕯️ <span style="color:#ff8a80">红蜡烛</span>: 散落3个，<b>超大视野+罗盘</b></p>
+        <p>🐴 <span style="color:#bcaaa4">黑驴蹄</span>: 僵尸<b>退避15秒</b></p>
+        <p>🥋 <span style="color:#a5d6a7">玉 衣</span>: 机关<b>免疫15秒</b></p>
+    </div>
+    <button class="btn" style="margin-top:40px" onclick="Game.init()">点灯摸金</button>
+</div>
+
+<script>
+/**
+ * TombRaider_Survival v23.1 Fix
+ * Fixed: Crash on startup due to missing DOM element ID.
+ * Updates: Enhanced Candle Buff, Improved Zombie Sprites, Fix Restart Logic
+ */
+
+const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
+const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
+
+// Projectile Types
+const PROJ_TYPES = {
+    ARROW: { spd: 350, size: 3, col: '#eee', trail: true },
+    STONE: { spd: 180, size: 10, col: '#795548', trail: false },
+    FIRE: { spd: 220, size: 6, col: '#ff5722', trail: true },
+    LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
+};
+
+// Level Themes
+const LEVELS = [
+    { name: "连弩塔", color: "#3e2723", wall: "#2d241e", delay: 1.5, type: 'ARROW' },
+    { name: "投石机", color: "#4e342e", wall: "#352822", delay: 2.0, type: 'STONE' },
+    { name: "滚木阵", color: "#5d4037", wall: "#422e26", delay: 2.5, type: 'LOG' },
+    { name: "喷火口", color: "#263238", wall: "#1b2427", delay: 3.0, type: 'FIRE' },
+    { name: "混合阵", color: "#3e2723", wall: "#2d241e", delay: 1.8, type: 'MIX' },
+    { name: "飞刀口", color: "#455a64", wall: "#314047", delay: 1.2, type: 'ARROW' },
+    { name: "巨石阵", color: "#33691e", wall: "#224715", delay: 4.0, type: 'STONE' },
+    { name: "鬼火阵", color: "#311b92", wall: "#221266", delay: 3.0, type: 'FIRE' },
+    { name: "万箭阵", color: "#212121", wall: "#121212", delay: 1.0, type: 'ARROW' },
+    { name: "绝 境", color: "#fff3e0", wall: "#8d6e63", delay: 2.0, type: 'MIX' }
+];
+
+const ARTIFACTS = [
+    {n: "战国玉蝉", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。"},
+    {n: "错金铜镜", i: "📀", d: "精美的青铜镜，背面错金工艺繁复。"},
+    {n: "盘龙金印", i: "🧧", d: "王侯之印，盘龙钮栩栩如生。"},
+    {n: "象牙酒杯", i: "🍷", d: "象牙雕刻而成的酒杯，价值连城。"},
+    {n: "水晶头骨", i: "💀", d: "通体透明的水晶头骨，眼神深邃。"},
+    {n: "越王古剑", i: "🗡️", d: "千年不锈，寒光凛凛的绝世名剑。"},
+    {n: "凤头金钗", i: "🥢", d: "宫廷御用金钗，做工极尽奢华。"},
+    {n: "夜明龙珠", i: "🔮", d: "黑暗中发出幽幽绿光的稀世奇珍。"},
+    {n: "传国玉玺", i: "👑", d: "受命于天，既寿永昌。"},
+    {n: "彼岸花",   i: "🌺", d: "通往彼岸的神秘之花，终极宝藏。"}
+];
+
+const SPECIAL_ITEMS = {
+    'item_candle': { n: "红蜡烛", i: "🕯️", d: "<b>黄金罗盘</b>: 视野大幅扩大 + 指引盗洞。", color: "#ff8a80" },
+    'item_wine':   { n: "糯米酒", i: "🍶", d: "<b>祛阴补阳</b>: 恢复 1 点生命值。", color: "#ffffff" },
+    'item_hoof':   { n: "黑驴蹄子", i: "🐴", d: "<b>生人勿近</b>: 僵尸退避 15 秒。", color: "#bcaaa4" },
+    'item_jade':   { n: "金缕玉衣", i: "🥋", d: "<b>刀枪不入</b>: 免疫机关伤害 15 秒。", color: "#a5d6a7" }
+};
+
+// --- Audio System ---
+const AudioSys = {
+    ctx: null, gain: null,
+    init: function() {
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+            this.gain = this.ctx.createGain();
+            this.gain.gain.value = 0.5;
+            this.gain.connect(this.ctx.destination);
+            
+            const d=this.ctx.createDelay(); d.delayTime.value=0.2;
+            const dg=this.ctx.createGain(); dg.gain.value=0.2;
+            this.gain.connect(d); d.connect(dg); dg.connect(this.ctx.destination);
+            this.ctx.resume();
+        } catch(e) {}
+    },
+    tone: function(f, type, dur, vol=0.1, slide=null) {
+        if(!this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(f, t);
+        if(slide) osc.frequency.linearRampToValueAtTime(slide, t+dur);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(vol, t+dur*0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+        osc.connect(g); g.connect(this.gain);
+        osc.start(t); osc.stop(t+dur+0.2);
+    },
+    playStep: function() { 
+        if(!this.ctx) return;
+        this.tone(60, 'square', 0.1, 0.15, 30); 
+    },
+    playOpen: function() {
+        if(!this.ctx) return;
+        const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain(), f=this.ctx.createBiquadFilter();
+        o.type='triangle'; o.frequency.setValueAtTime(50,t); o.frequency.exponentialRampToValueAtTime(30,t+0.8);
+        f.type='lowpass'; f.frequency.value=200;
+        g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.6,t+0.1); g.gain.linearRampToValueAtTime(0,t+1.0);
+        o.connect(f); f.connect(g); g.connect(this.gain); o.start(t); o.stop(t+1.1);
+    },
+    playItem: function(s) { 
+        if(s) { this.tone(523, 'sine', 0.5, 0.2); setTimeout(()=>this.tone(784, 'sine', 1.0, 0.2), 100); }
+        else this.tone(880, 'sine', 0.1, 0.1);
+    },
+    playTrap: function(dist) { 
+        const maxDist = 600;
+        if(dist > maxDist) return;
+        const vol = Math.max(0, 1 - dist/maxDist) * 0.4;
+        this.tone(600, 'sawtooth', 0.2, vol, 200); 
+    },
+    playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
+    playHurt: function() { 
+        this.tone(120, 'sawtooth', 0.3, 0.5, 80); 
+        setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100);
+    },
+    playUse: function() { this.tone(400, 'sine', 1.0, 0.2, 800); }
+};
+
+// --- Input ---
+const Input = { x:0, y:0, active:false };
+(function(){
+    const z=document.getElementById('joystick-zone'), k=document.getElementById('joystick-knob');
+    const h = (e,end)=>{
+        const t=e.touches?e.touches[0]:e, r=z.getBoundingClientRect();
+        if(end){Input.active=false;Input.x=0;Input.y=0;k.style.transform='translate(-50%,-50%)';return;}
+        let dx=t.clientX-(r.left+r.width/2), dy=t.clientY-(r.top+r.height/2);
+        const d=Math.min(Math.hypot(dx,dy),70), a=Math.atan2(dy,dx);
+        Input.x=Math.cos(a)*d/70; Input.y=Math.sin(a)*d/70; Input.active=true;
+        k.style.transform=`translate(calc(-50% + ${Input.x*d}px), calc(-50% + ${Input.y*d}px))`;
+    };
+    z.addEventListener('touchstart',e=>{e.preventDefault();h(e)},{passive:false});
+    z.addEventListener('touchmove',e=>{e.preventDefault();h(e)},{passive:false});
+    z.addEventListener('touchend',e=>{e.preventDefault();h(e,1)},{passive:false});
+    z.addEventListener('mousedown',e=>{Input.m=1;h(e)});
+    window.addEventListener('mousemove',e=>{if(Input.m)h(e)});
+    window.addEventListener('mouseup',e=>{if(Input.m){Input.m=0;h(e,1)}});
+})();
+
+// --- Entities ---
+class Entity { constructor(x,y,t){this.x=x;this.y=y;this.type=t;this.dead=0;} }
+
+class GroundItem extends Entity {
+    constructor(x,y,code) { super(x,y,'ground_item'); this.code=code; this.info=SPECIAL_ITEMS[code]; }
+    update(dt, p) {
+        if(Math.hypot(this.x-p.x, this.y-p.y) < 30) {
+            Game.getItem(this.code);
+            this.dead = 1;
+        }
+    }
+    draw(ctx) {
+        const yOff = Math.sin(Date.now()/300)*5;
+        ctx.font = "24px serif"; ctx.textAlign = "center";
+        ctx.fillText(this.info.i, 0, yOff);
+        ctx.shadowBlur=15; ctx.shadowColor=this.info.color;
+        ctx.beginPath(); ctx.arc(0,10,8,0,6.28); ctx.fillStyle=this.info.color; ctx.fill();
+        ctx.shadowBlur=0;
+    }
+}
+
+class Coffin extends Entity {
+    constructor(x,y,c){super(x,y,'coffin');this.content=c;this.opened=0;this.shake=0;}
+    interact() {
+        if(this.opened) return;
+        this.opened = 1; this.shake = 30; AudioSys.playOpen();
+        setTimeout(() => {
+            if(this.content === 'artifact') Game.getArtifact();
+            else if(this.content === 'zombie') { Game.spawn(new Zombie(this.x,this.y+20, 0)); Game.msg("起尸了!", "#f44336"); AudioSys.playAttack(); }
+            else { Game.msg("空空如也...", "#aaa"); }
+        }, 600);
+    }
+    draw(ctx) {
+        if(this.shake>0){ctx.translate((Math.random()-.5)*4,0);this.shake--;}
+        ctx.fillStyle=this.opened?'#3e2723':'#271c19'; ctx.fillRect(-20,-25,40,50);
+        ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.strokeRect(-20,-25,40,50);
+        if(!this.opened){
+            ctx.fillStyle='#ffd700'; ctx.fillRect(-6,-10,12,20);
+            ctx.fillStyle='#b71c1c'; ctx.font='14px serif'; ctx.textAlign="left"; ctx.fillText('敕',-7,5);
+        } else { ctx.fillStyle='#000'; ctx.fillRect(-16,-20,32,40); }
+    }
+}
+
+class Zombie extends Entity {
+    constructor(x,y,type=0){super(x,y,'zombie');
+        this.zType = type; // 0: Normal, 1: Sprinter
+        this.spd = type===1 ? CONFIG.SPRINTER_SPD : CONFIG.ZOMBIE_SPD + Game.lvl*5;
+        this.dir = Math.random()*6.28;
+        this.changeDirT = 0;
+    }
+    update(dt,p) {
+        const oldX=this.x, oldY=this.y;
+        const dx=p.x-this.x, dy=p.y-this.y, d=Math.hypot(dx,dy);
+        
+        let repel = p.buffs.hoof > 0;
+        
+        if(this.zType === 0) {
+            let active = d<200 || (Input.active && d<350);
+            if(active || repel) {
+                let tx=dx, ty=dy, s=this.spd;
+                if(repel && d<350) { tx=-dx; ty=-dy; s=this.spd*1.5; }
+                if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.4;
+                
+                if(!repel || d<350) {
+                    this.x += (tx/d)*s*dt;
+                    if(MapSys.get(this.x, this.y) === TERRAIN.WALL) this.x = oldX; 
+                    this.y += (ty/d)*s*dt;
+                    if(MapSys.get(this.x, this.y) === TERRAIN.WALL) this.y = oldY;
+                }
+            }
+        } 
+        else { // Sprinter
+            this.changeDirT -= dt;
+            if(this.changeDirT <= 0) {
+                this.changeDirT = 1.0 + Math.random();
+                this.dir = Math.random() * 6.28;
+            }
+            let vx = Math.cos(this.dir) * this.spd;
+            let vy = Math.sin(this.dir) * this.spd;
+            
+            this.x += vx * dt;
+            if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.x = oldX; this.dir = Math.PI - this.dir; }
+            this.y += vy * dt;
+            if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.y = oldY; this.dir = -this.dir; }
+        }
+        
+        if(!repel && d<20) { p.hit(); AudioSys.playAttack(); }
+        this.hop = Math.abs(Math.sin(Date.now()/(this.zType===1?100:200)))*-8;
+    }
+    draw(ctx){
+        ctx.translate(0,this.hop||0);
+        if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
+        
+        const isSprinter = this.zType === 1;
+        
+        // Official Hat
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-10,-42,20,5); // Rim
+        ctx.fillRect(-6,-48,12,6);  // Top
+        ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; 
+        ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill(); // Knob
+
+        // Robe
+        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; 
+        ctx.fillRect(-12,-25,24,25);
+        
+        // Head
+        ctx.fillStyle='#e0e0e0'; ctx.beginPath(); ctx.arc(0,-30,9,0,6.28); ctx.fill();
+        
+        // Arms (Reaching out)
+        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; 
+        ctx.fillRect(-14, -28, 6, 20); // L
+        ctx.fillRect(8, -28, 6, 20);  // R
+        
+        // Tag
+        ctx.fillStyle='#ffea00'; ctx.fillRect(-3,-38,6,12);
+    }
+}
+
+class Trap extends Entity {
+    constructor(x,y,type){super(x,y,'trap');this.life=3;this.cd=Math.random();this.pType=type;}
+    update(dt,p){
+        this.cd-=dt;
+        if(this.cd<0){
+            this.cd = 1.0 + Math.random()*0.5;
+            const pdx=p.x-this.x, pdy=p.y-this.y, ang=Math.atan2(pdy,pdx);
+            const dist = Math.hypot(this.x-p.x, this.y-p.y);
+            Game.spawn(new Projectile(this.x,this.y,ang,this.pType)); 
+            AudioSys.playTrap(dist);
+        }
+    }
+    draw(ctx){
+        ctx.fillStyle='#424242'; ctx.fillRect(-12,-20,24,20);
+        ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-12,-20); ctx.lineTo(-15,0); ctx.lineTo(15,0); ctx.lineTo(12,-20); ctx.fill();
+        ctx.fillStyle='#f44336'; 
+        const pulse = 3 + Math.sin(Date.now()/100)*2;
+        ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
+    }
+}
+
+class Projectile extends Entity {
+    constructor(x,y,a,type){super(x,y,'proj');
+        this.info = PROJ_TYPES[type] || PROJ_TYPES.ARROW;
+        this.vx=Math.cos(a)*this.info.spd;
+        this.vy=Math.sin(a)*this.info.spd;
+        this.life=3.0; this.ang=a;
+    }
+    update(dt,p){
+        this.life-=dt; if(this.life<0)this.dead=1;
+        this.x+=this.vx*dt; this.y+=this.vy*dt;
+        if(Math.hypot(this.x-p.x,this.y-p.y)<this.info.size+10){
+            if(p.buffs.jade > 0) {
+                // Absorbed
+                this.dead = 1;
+            } else {
+                p.hit(); 
+                this.dead=1;
+            }
+        }
+        if(MapSys.get(this.x,this.y)===TERRAIN.WALL) this.dead=1;
+    }
+    draw(ctx){
+        ctx.rotate(this.ang);
+        ctx.fillStyle=this.info.col;
+        if(this.info.shape === 'rect') { ctx.fillRect(-10, -5, 20, 10); } 
+        else { ctx.beginPath(); ctx.arc(0,0,this.info.size,0,6.28); ctx.fill(); }
+        if(this.info.trail) {
+            ctx.strokeStyle=this.info.col; ctx.globalAlpha=0.5;
+            ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(-20,0); ctx.stroke();
+            ctx.globalAlpha=1;
+        }
+    }
+}
+
+class Player extends Entity {
+    constructor(x,y){super(x,y,'player');this.hp=5;this.sight=CONFIG.BASE_SIGHT;this.inv=0;this.buffs={hoof:0,candle:0,jade:0};this.walkT=0;this.hasCompass=0;}
+    update(dt){
+        if(this.inv>0)this.inv-=dt;
+        if(this.buffs.hoof>0) this.buffs.hoof-=dt;
+        if(this.buffs.candle>0) this.buffs.candle-=dt;
+        if(this.buffs.jade>0) this.buffs.jade-=dt;
+        
+        let s=180;
+        if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        
+        if(Input.active){
+            const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
+            if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
+            if(MapSys.get(this.x,ny)!==TERRAIN.WALL)this.y=ny;
+            
+            this.walkT+=dt;
+            if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
+        }
+    }
+    hit(){
+        if(this.inv>0 || this.buffs.hoof>0)return;
+        this.hp--; this.inv=1; Game.shake=10; AudioSys.playHurt();
+        Game.updateHUD(); Game.msg("受到伤害!","#f00");
+        if(this.hp<=0)Game.over();
+    }
+    draw(ctx){
+        if(this.inv>0&&Date.now()%100<50)return;
+        
+        if(this.buffs.hoof>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fillStyle='rgba(161,136,127,0.3)'; ctx.fill(); }
+        if(this.buffs.jade>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=2; ctx.stroke(); }
+
+        ctx.rotate(Math.atan2(Input.y,Input.x));
+        
+        // Walk Anim
+        if(Input.active) {
+            const w = Math.sin(Date.now()/100)*4;
+            ctx.fillStyle='#3e2723'; 
+            ctx.fillRect(-8,-5+w,6,12); 
+            ctx.fillRect(2,-5-w,6,12);
+        }
+        
+        // Body (Backpack)
+        ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18);
+        ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
+        
+        // Head
+        ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
+        
+        // Flashlight
+        ctx.fillStyle='#ffecb3';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
+    }
+}
+
+// --- Map ---
+const MapSys = {
+    w:60, h:60, t:[], 
+    gen: function(l){
+        this.t=new Uint8Array(this.w*this.h).fill(1);
+        const rms=[];
+        for(let i=0;i<10+l;i++){
+            const w=6+Math.floor(Math.random()*6), h=6+Math.floor(Math.random()*6);
+            const x=2+Math.floor(Math.random()*(this.w-w-4)), y=2+Math.floor(Math.random()*(this.h-h-4));
+            if(!rms.some(r=>x<r.x+r.w+1 && x+w+1>r.x && y<r.y+r.h+1 && y+h+1>r.y)){
+                rms.push({x,y,w,h});
+                for(let Y=y;Y<y+h;Y++)for(let X=x;X<x+w;X++) this.t[Y*this.w+X] = 0; 
+                if(rms.length>1){
+                    let p=rms[rms.length-2], cx1=p.x+p.w/2|0, cy1=p.y+p.h/2|0, cx2=x+w/2|0, cy2=y+h/2|0;
+                    while(cx1!=cx2){cx1+=cx1<cx2?1:-1;if(this.t[cy1*this.w+cx1]==1)this.t[cy1*this.w+cx1]=0;}
+                    while(cy1!=cy2){cy1+=cy1<cy2?1:-1;if(this.t[cy1*this.w+cx1]==1)this.t[cy1*this.w+cx1]=0;}
+                }
+            }
+        }
+        
+        const last = rms[rms.length-1];
+        for(let Y=last.y; Y<last.y+last.h; Y++)
+            for(let X=last.x; X<last.x+last.w; X++)
+                this.t[Y*this.w+X] = 2;
+
+        return rms;
+    },
+    get: function(px,py){
+        const tx=px/CONFIG.TILE|0, ty=py/CONFIG.TILE|0;
+        if(tx<0||tx>=this.w||ty<0||ty>=this.h) return 1;
+        return this.t[ty*this.w+tx];
+    }
+};
+
+// --- Game Engine ---
+const Game = {
+    cvs:document.getElementById('gameCanvas'), ctx:document.getElementById('gameCanvas').getContext('2d'),
+    ents:[], lvl:1, art:0, exit:0, pause:0, shake:0, running:0,
+    
+    init: function(){
+        this.resize(); window.onresize=()=>this.resize();
+        document.getElementById('start-screen').style.display='none';
+        AudioSys.init(); 
+        this.restart();
+    },
+    
+    restart: function() {
+        this.lvl = 1; this.art = 0; this.saved = null;
+        document.getElementById('game-over-modal').classList.remove('active');
+        document.getElementById('victory-modal').classList.remove('active');
+        this.running = 1;
+        this.load(1); this.loop();
+    },
+    
+    resize: function(){this.cvs.width=window.innerWidth;this.cvs.height=window.innerHeight;},
+    
+    closeModal: function() {
+        document.getElementById('item-modal').classList.remove('active');
+        this.pause = false;
+        if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
+    },
+
+    load: function(l){
+        this.lvl=l; this.ents=[]; this.exit=0;
+        const rms=MapSys.gen(l), s=rms[0], e=rms[rms.length-1];
+        this.p=new Player((s.x+s.w/2)*CONFIG.TILE, (s.y+s.h/2)*CONFIG.TILE);
+        if(this.saved) { this.p.hp=this.saved.hp; }
+        this.ents.push(this.p);
+        
+        const corners=[];
+        rms.forEach(r => {
+             corners.push({x:r.x*CONFIG.TILE+25, y:r.y*CONFIG.TILE+25});
+             corners.push({x:(r.x+r.w)*CONFIG.TILE-25, y:(r.y+r.h)*CONFIG.TILE-25});
+        });
+        
+        // 3 Candles, 1 Wine, 1 Hoof, 1 Jade
+        ['item_wine', 'item_hoof', 'item_jade', 'item_candle', 'item_candle', 'item_candle'].forEach(code => {
+             if(corners.length>0) {
+                 const ri = Math.floor(Math.random()*corners.length);
+                 this.ents.push(new GroundItem(corners[ri].x, corners[ri].y, code));
+                 corners.splice(ri,1);
+             }
+        });
+        
+        const spots=[];
+        for(let i=1;i<rms.length-1;i++) spots.push({x:(rms[i].x+rms[i].w/2)*CONFIG.TILE, y:(rms[i].y+rms[i].h/2)*CONFIG.TILE});
+        
+        if(spots.length>0) {
+            const ai = Math.floor(Math.random()*spots.length);
+            this.ents.push(new Coffin(spots[ai].x, spots[ai].y, 'artifact'));
+            spots.splice(ai,1);
+        }
+        
+        spots.forEach(p => {
+             const c = Math.random()<0.5?'empty':'zombie';
+             this.ents.push(new Coffin(p.x, p.y, c));
+        });
+        
+        const lData = LEVELS[Math.min(l-1, 9)];
+        for(let i=0; i<5 + l; i++) {
+             const r=rms[Math.floor(Math.random()*rms.length)];
+             let tType = lData.type;
+             if(tType === 'MIX') {
+                 const keys = Object.keys(PROJ_TYPES);
+                 tType = keys[Math.floor(Math.random()*keys.length)];
+             }
+             this.ents.push(new Trap(r.x*CONFIG.TILE + Math.random()*r.w*CONFIG.TILE, r.y*CONFIG.TILE + Math.random()*r.h*CONFIG.TILE, tType));
+        }
+        
+        this.exitPos = {x:(e.x+e.w/2)*CONFIG.TILE, y:(e.y+e.h/2)*CONFIG.TILE};
+        
+        for(let i=0;i<4+l*2;i++){
+            const r=rms[Math.floor(Math.random()*rms.length)];
+            const isSprinter = Math.random() < 0.2 ? 1 : 0;
+            this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, isSprinter));
+        }
+        this.updateHUD(); this.msg(`进入第 ${l} 层`, '#fff');
+    },
+    
+    showModal: function(t,i,d,c) {
+        document.getElementById('item-title').innerText=t; document.getElementById('item-title').style.color=c||'#ffd700';
+        document.getElementById('item-icon').innerText=i; document.getElementById('item-desc').innerHTML=d;
+        document.getElementById('item-modal').classList.add('active'); this.pause=true;
+    },
+    
+    getArtifact: function() {
+        AudioSys.playItem(true);
+        const a=ARTIFACTS[this.lvl-1];
+        this.showModal(a.n,a.i,a.d+`\n(收集: ${this.lvl}/10)`);
+        this.pendingEffect = ()=>{this.art++; this.exit=1; this.msg("盗洞已开启!", "#0f0"); this.updateHUD();};
+    },
+    getItem: function(c) {
+        AudioSys.playItem(true);
+        const i=SPECIAL_ITEMS[c];
+        this.showModal(i.n,i.i,i.d,i.color);
+        this.pendingEffect = ()=>{
+            AudioSys.playUse();
+            if(c==='item_candle'){
+                this.p.sight+=150; // Increased
+                this.p.hasCompass=1; 
+                this.msg("罗盘激活! 视野大开!",i.color);
+            }
+            if(c==='item_wine'){this.p.hp=Math.min(5,this.p.hp+1); this.msg("生命恢复!",i.color); this.updateHUD();}
+            if(c==='item_hoof'){this.p.buffs.hoof=15; this.msg("尸畏 15秒!",i.color);}
+            if(c==='item_jade'){this.p.buffs.jade=15; this.msg("无视机关 15秒!",i.color);}
+        };
+    },
+    
+    spawn: function(e){this.ents.push(e);},
+    msg: function(t,c){const b=document.getElementById('msg-box');b.innerHTML=t;b.style.color=c;b.classList.add('msg-show');setTimeout(()=>b.classList.remove('msg-show'),2000);},
+    updateHUD: function(){
+        document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
+        document.getElementById('level-num').innerText=`第 ${this.lvl} 层`;
+        document.getElementById('trap-name').innerText=LEVELS[Math.min(this.lvl-1,9)].name;
+        document.getElementById('artifact-bar').innerText=`冥器: ${this.art}/10`;
+    },
+    over: function(){
+        this.running=0;
+        document.getElementById('game-over-modal').classList.add('active');
+    },
+    victory: function(){
+        this.running=0;
+        document.getElementById('victory-modal').classList.add('active');
+    },
+    
+    loop: function(){
+        if(!this.running) return;
+        requestAnimationFrame(()=>this.loop());
+        if(this.pause) return;
+        if(this.shake>0)this.shake*=.9;
+        
+        const bb = document.getElementById('buff-bar'); bb.innerHTML='';
+        if(this.p.buffs.hoof>0) bb.innerHTML+=`<div class="buff buff-hoof">🐴 尸畏: ${Math.ceil(this.p.buffs.hoof)}s</div>`;
+        if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 玉衣: ${Math.ceil(this.p.buffs.jade)}s</div>`;
+        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-candle">🕯️ 罗盘激活</div>`;
+        
+        const dt=0.016;
+        this.ents = this.ents.filter(e=>!e.dead);
+        this.ents.sort((a,b)=>a.y-b.y);
+        
+        this.ents.forEach(e=>{
+            if(e.update) e.type==='zombie'||e.type==='trap'||e.type==='proj'||e.type==='ground_item'?e.update(dt,this.p):e.update(dt);
+            if(e.type==='coffin'&&!e.opened&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<40) e.interact();
+        });
+        
+        if(this.exit && Math.hypot(this.exitPos.x-this.p.x, this.exitPos.y-this.p.y)<30){
+            if(this.lvl>=10){ this.victory(); }
+            else{
+                this.saved={hp:this.p.hp}; 
+                this.load(this.lvl+1);
+            }
+        }
+        this.render();
+    },
+    
+    render: function(){
+        const w=this.cvs.width, h=this.cvs.height, ctx=this.ctx;
+        let cx=this.p.x-w/2 + (Math.random()-.5)*this.shake, cy=this.p.y-h/2 + (Math.random()-.5)*this.shake;
+        
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h);
+        ctx.save(); ctx.translate(-cx,-cy);
+        
+        const cs=Math.floor(cx/CONFIG.TILE), ce=cs+w/CONFIG.TILE+2;
+        const rs=Math.floor(cy/CONFIG.TILE), re=rs+h/CONFIG.TILE+2;
+        const ldata=LEVELS[Math.min(this.lvl-1,9)];
+        const now = Date.now();
+        
+        for(let y=rs;y<re;y++)for(let x=cs;x<ce;x++){
+            if(x>=0&&x<MapSys.w&&y>=0&&y<MapSys.h){
+                const t = MapSys.t[y*MapSys.w+x];
+                const px=x*CONFIG.TILE, py=y*CONFIG.TILE;
+                
+                if(t==0){ // Floor (Bricks)
+                    ctx.fillStyle='#2d241e'; ctx.fillRect(px,py,50,50);
+                    ctx.strokeStyle='#3e2723'; ctx.lineWidth=2;
+                    ctx.strokeRect(px,py,50,25); ctx.strokeRect(px,py+25,50,25); 
+                    if(y%2==0) { ctx.beginPath(); ctx.moveTo(px+25, py); ctx.lineTo(px+25, py+25); ctx.stroke(); }
+                    else { ctx.beginPath(); ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50); ctx.stroke(); }
+                } 
+                else if(t==2) { // Water
+                    ctx.fillStyle='#01579b';ctx.fillRect(px,py,50,50);
+                    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
+                    ctx.beginPath();
+                    const off = Math.sin(now/400 + x/2)*10;
+                    ctx.moveTo(px, py+25+off); ctx.lineTo(px+50, py+25-off);
+                    ctx.stroke();
+                }
+                else { // Wall (Stone Noise)
+                    ctx.fillStyle='#1b1b1b'; ctx.fillRect(px,py,50,50);
+                    ctx.fillStyle='rgba(255,255,255,0.05)';
+                    const seed = (x*y*123)%7;
+                    if(seed<3) ctx.fillRect(px+10,py+10,30,10);
+                    if(seed>4) ctx.fillRect(px+5,py+30,20,15);
+                }
+            }
+        }
+        
+        if(this.exit) {
+            ctx.save(); ctx.translate(this.exitPos.x, this.exitPos.y);
+            ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,25,0,6.28);ctx.fill();
+            ctx.strokeStyle='#fff';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,25,0,6.28);ctx.stroke();
+            ctx.fillStyle='#ffd700';ctx.font='20px serif';ctx.textAlign='center';ctx.fillText("⬇",0,5);
+            ctx.restore();
+        }
+
+        this.ents.forEach(e=>{
+            ctx.save(); ctx.translate(e.x,e.y);
+            if(e.draw)e.draw(ctx);
+            ctx.restore();
+        });
+        
+        // Compass Arrow
+        if(this.exit && this.p.hasCompass) {
+            const dx=this.exitPos.x-this.p.x, dy=this.exitPos.y-this.p.y;
+            const ang=Math.atan2(dy,dx);
+            const dist=70;
+            ctx.translate(this.p.x, this.p.y);
+            ctx.rotate(ang);
+            ctx.translate(dist, 0);
+            ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
+            ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
+            ctx.shadowBlur=0;
+        }
+
+        ctx.restore();
+        
+        // Lighting
+        if(this.p.buffs.candle <= 0) {
+            const g=ctx.createRadialGradient(w/2,h/2,30,w/2,h/2,this.p.sight);
+            g.addColorStop(0,'rgba(0,0,0,0)');
+            g.addColorStop(1,'rgba(0,0,0,0.98)');
+            ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+        }
+    }
+};
+
+document.getElementById('start-btn').onclick=()=>{
+    document.getElementById('start-screen').style.display='none';
+    AudioSys.init(); Game.init();
+};
+</script>
+</body>
+</html>
