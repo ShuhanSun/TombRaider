@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v41.0 Final Perfect)</title>
+    <title>寻龙诀:绝地求生 (v43.0 Mechanic Update)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -12,7 +12,7 @@
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
         /* Joystick (Touch Only) */
-        #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; display: none; } /* Hidden by default, shown on touch */
+        #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; display: none; } 
         @media (pointer: coarse) { #joystick-zone { display: block; } }
         #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(180, 140, 90, 0.9); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.3); }
         
@@ -67,7 +67,7 @@
         }
         .overlay.active { display: flex; opacity: 1; }
         
-        /* SMALLER Item Card (Only for Artifacts now) */
+        /* SMALLER Item Card */
         #item-card {
             background: linear-gradient(145deg, #1a120b, #2c1e16); border: 2px solid #8d6e63;
             padding: 20px; border-radius: 10px; text-align: center;
@@ -164,7 +164,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V40.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V43.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -182,8 +182,8 @@
 
 <script>
 /**
- * TombRaider_Survival v40.0 Final Perfect
- * Updates: Keyboard Support, No Item Modal for Special Items (Auto Pickup), Soft Pain Sound.
+ * TombRaider_Survival v43.0 Mechanic Update
+ * Updates: Blue Zombie attack cooldown, Red Zombie explode on touch, Varied Wall Colors.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -203,7 +203,19 @@ const LEVELS_DATA = [
     { delay: 1.0, type: 'ARROW', col: '#212121' }, { delay: 2.0, type: 'MIX', col: '#b71c1c' }
 ];
 
-const WALL_COLORS = ['#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'];
+// Varied Wall Colors per Level
+const WALL_COLORS = [
+    '#5d4037', // 1: Brown
+    '#424242', // 2: Grey
+    '#3e2723', // 3: Dark Wood
+    '#263238', // 4: Blue Grey
+    '#b71c1c', // 5: Dark Red
+    '#1a237e', // 6: Dark Blue
+    '#004d40', // 7: Teal
+    '#311b92', // 8: Purple
+    '#212121', // 9: Black
+    '#ffd700'  // 10: Goldish
+];
 
 const ARTIFACTS = [
     {n: "战国玉蝉", en: "Jade Cicada", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。", end: "Keeps the body from decaying."},
@@ -230,7 +242,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V40.0",
+        ver: "绝地求生 V43.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -247,7 +259,7 @@ const LANG = {
             candle: {n:"千年油灯", d:"<b>长明不灭</b>: 视野大幅扩大。"},
             wine: {n:"糯米酒", d:"<b>祛阴补阳</b>: 恢复 1 点生命值。"},
             hoof: {n:"黑驴蹄子", d:"<b>生人勿近</b>: 僵尸退避 15 秒。"},
-            jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫机关伤害 15 秒。"},
+            jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫所有伤害 15 秒。"},
             compass: {n:"风水罗盘", d:"<b>寻龙分金</b>: 指向冥器棺材，得手后指向盗洞。"}
         },
         msgs: {
@@ -260,7 +272,7 @@ const LANG = {
             compass: "罗盘在手! 寻龙分金!",
             heal: "生命恢复!",
             repel: "尸畏 15秒!",
-            immune: "无视机关 15秒!",
+            immune: "无敌 15秒!",
             hole: "盗洞已开启! 水脉逆流!"
         },
         levelNames: LEVEL_NAMES_CN,
@@ -270,7 +282,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V40.0",
+        ver: "Survival V43.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -287,7 +299,7 @@ const LANG = {
             candle: {n:"Ancient Lamp", d:"<b>Eternal Flame</b>: Max Vision Range."},
             wine: {n:"Rice Wine", d:"<b>Vitality</b>: Restore 1 HP."},
             hoof: {n:"Donkey Hoof", d:"<b>Repel</b>: Zombies fear you for 15s."},
-            jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to traps for 15s."},
+            jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to ALL damage for 15s."},
             compass: {n:"Compass", d:"<b>Feng Shui</b>: Points to Artifact, then Exit."}
         },
         msgs: {
@@ -300,7 +312,7 @@ const LANG = {
             compass: "Compass Active!",
             heal: "HP Restored!",
             repel: "Repel 15s!",
-            immune: "Immune 15s!",
+            immune: "Invincible 15s!",
             hole: "Exit Opened! Water Rising!"
         },
         levelNames: LEVEL_NAMES_EN,
@@ -412,15 +424,11 @@ const Input = { x:0, y:0, active:false, keys:{} };
         if (Input.keys['ArrowLeft'] || Input.keys['KeyA']) kx -= 1;
         if (Input.keys['ArrowRight'] || Input.keys['KeyD']) kx += 1;
 
-        // Only override if touch is inactive or keyboard is pressed
         if (kx !== 0 || ky !== 0) {
-            // Normalize
             const len = Math.hypot(kx, ky);
             if (len > 0) { kx /= len; ky /= len; }
             Input.x = kx; Input.y = ky; Input.active = true;
-        } else if (!Input.m) { // Don't reset if mouse dragging
-             // If no keys pressed, release (unless touch is active, handled separately)
-             // Simple conflict resolution: Key release stops active only if it was key-driven
+        } else if (!Input.m) { 
              if(!z.matches(':active')) { Input.active = false; Input.x=0; Input.y=0; }
         }
     }
@@ -478,11 +486,6 @@ class Coffin extends Entity {
     constructor(x,y,c){super(x,y,'coffin');this.content=c;this.opened=0;this.shake=0;this.lidOffset=0;this.interactTimer=0;}
     interact(dt, p) {
         if(this.opened) return;
-        
-        // Collision logic (Can't walk through)
-        // Handled in Player update
-        
-        // Open logic: Must stay close for 0.6s
         if(Math.hypot(this.x-p.x, this.y-p.y) < 45) {
             this.interactTimer += dt;
             if(this.interactTimer > 0.6) {
@@ -530,12 +533,10 @@ class Coffin extends Entity {
         ctx.save();
         ctx.rotate(Math.PI/2); 
         
-        // Body
         ctx.fillStyle = '#212121'; 
         ctx.beginPath();
         ctx.moveTo(-18, -35); ctx.lineTo(18, -35); ctx.lineTo(14, 35); ctx.lineTo(-14, 35); ctx.closePath(); ctx.fill();
         
-        // Lid
         if(this.opened) {
             ctx.save();
             ctx.translate(this.lidOffset, -this.lidOffset); 
@@ -555,7 +556,6 @@ class Coffin extends Entity {
         if(this.opened) ctx.restore();
         ctx.restore();
         
-        // Progress bar
         if(this.interactTimer > 0 && !this.opened) {
             ctx.fillStyle = '#0f0';
             ctx.fillRect(-20, -60, 40 * (this.interactTimer/0.6), 5);
@@ -567,13 +567,14 @@ class Zombie extends Entity {
     constructor(x,y,type=0){super(x,y,'zombie');
         this.zType = type; this.spd = type===1 ? CONFIG.SPRINTER_SPD : CONFIG.ZOMBIE_SPD + Game.lvl*5;
         this.dir = Math.random()*6.28; this.changeDirT = 0;
+        this.attackCD = 0; // Attack cooldown
     }
     update(dt,p) {
         const oldX=this.x, oldY=this.y;
         const dx=p.x-this.x, dy=p.y-this.y, d=Math.hypot(dx,dy);
         let repel = p.buffs.hoof > 0;
         
-        if(this.zType === 0) {
+        if(this.zType === 0) { // Blue Zombie
             let active = d<200 || (Input.active && d<350);
             if(active || repel) {
                 let tx=dx, ty=dy, s=this.spd;
@@ -584,21 +585,33 @@ class Zombie extends Entity {
                     this.y += (ty/d)*s*dt; if(MapSys.get(this.x,this.y)===TERRAIN.WALL) this.y=oldY;
                 }
             }
-        } else { 
+            
+            if(this.attackCD > 0) this.attackCD -= dt;
+            if(!repel && d<20 && this.attackCD <= 0) {
+                p.hit();
+                AudioSys.playAttack();
+                this.attackCD = 1.0; // 1s cooldown
+            }
+        } else { // Red Sprinter (Explodes)
             this.changeDirT -= dt;
             if(this.changeDirT <= 0) { this.changeDirT = 1.0 + Math.random(); this.dir = Math.random() * 6.28; }
             let vx = Math.cos(this.dir) * this.spd; let vy = Math.sin(this.dir) * this.spd;
             this.x += vx * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.x = oldX; this.dir = Math.PI - this.dir; }
             this.y += vy * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.y = oldY; this.dir = -this.dir; }
+            
+            if(!repel && d<20) {
+                p.hit();
+                Game.spawn(new Effect(this.x, this.y, 'burst')); // Explosion
+                AudioSys.playAttack();
+                this.dead = 1; // Suicide
+            }
         }
-        if(!repel && d<20) { p.hit(); AudioSys.playAttack(); }
         this.hop = Math.abs(Math.sin(Date.now()/(this.zType===1?100:200)))*-8;
     }
     draw(ctx){
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
         const isSprinter = this.zType === 1;
-        if(isSprinter) { ctx.fillStyle = '#ff5252'; ctx.font='12px serif'; ctx.textAlign='center'; ctx.fillText(LANG[curLang].labels.sprinter, 0, -50); }
         
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
         ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
@@ -670,31 +683,17 @@ class Player extends Entity {
         if(this.buffs.candle>0) this.buffs.candle-=dt;
         if(this.buffs.jade>0) this.buffs.jade-=dt;
         
-        const oldX=this.x, oldY=this.y;
         let s=160; if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
-        
         if(Input.active){
             const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
-            
-            // Check Walls
-            if(MapSys.get(nx,this.y)!==TERRAIN.WALL) this.x=nx;
-            if(MapSys.get(this.x,ny)!==TERRAIN.WALL) this.y=ny;
-            
-            // Check Coffin Collision
-            Game.ents.forEach(e => {
-                if(e.type === 'coffin') {
-                    if(Math.hypot(this.x-e.x, this.y-e.y) < 30) {
-                        this.x = oldX; this.y = oldY;
-                    }
-                }
-            });
-            
+            if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
+            if(MapSys.get(this.x,ny)!==TERRAIN.WALL)this.y=ny;
             this.stepPhase += dt * 10;
             this.walkT+=dt; if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
         } else { this.stepPhase = 0; }
     }
     hit(){
-        if(this.inv>0 || this.buffs.hoof>0)return;
+        if(this.inv>0 || this.buffs.hoof>0 || this.buffs.jade>0)return; // Jade immune
         this.hp--; this.inv=1.5; Game.shake=10; AudioSys.playHurt();
         Game.updateHUD(); Game.msg(LANG[curLang].msgs.hurt,"#f00");
         if(this.hp<=0)Game.over();
@@ -891,7 +890,7 @@ const Game = {
         
         const lName = LANG[curLang].levelNames[Math.min(l-1,9)];
         const splash = document.getElementById('level-title-text');
-        const levelStr = LANG[curLang].level.replace('%s', l).split('|')[0].trim(); // Fix %m logic
+        const levelStr = LANG[curLang].level.replace('%s', l).split('|')[0].trim(); 
         splash.innerText = `${levelStr} | ${lName}`;
         document.getElementById('level-title-box').classList.remove('show-level-title');
         void document.getElementById('level-title-box').offsetWidth;
@@ -907,14 +906,12 @@ const Game = {
         const a = ARTIFACTS[this.lvl-1];
         const name = curLang === 'CN' ? a.n : a.en;
         
-        // Direct Feedback (No Modal)
         this.msg(`${LANG[curLang].modalBtn}: ${name}`, '#ffd700');
         
         this.art++; this.exit=1; 
         this.msg(LANG[curLang].msgs.hole, "#0f0"); 
         this.updateHUD();
         
-        // Flood
         const r = this.exitRoom;
         for(let y=r.y; y<r.y+r.h; y++){
             for(let x=r.x; x<r.x+r.w; x++){
@@ -930,7 +927,6 @@ const Game = {
         const item = LANG[curLang].items[key];
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const col = colors[key];
-        const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         
         // Direct Pickup (No Modal)
         AudioSys.playUse();
