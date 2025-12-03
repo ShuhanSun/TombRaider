@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v38.0 Final Polish)</title>
+    <title>寻龙诀:绝地求生 (v39.0 Smooth)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -70,7 +70,7 @@
         #item-card {
             background: linear-gradient(145deg, #1a120b, #2c1e16); border: 2px solid #8d6e63;
             padding: 20px; border-radius: 10px; text-align: center;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); max-width: 60%; width: 250px; /* Smaller */
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); max-width: 60%; width: 250px; 
             transform: scale(0.9); transition: transform 0.2s;
         }
         #item-icon { font-size: 60px; margin-bottom: 10px; display: block; animation: floatIcon 3s ease-in-out infinite; }
@@ -163,7 +163,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V38.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V39.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -181,8 +181,8 @@
 
 <script>
 /**
- * TombRaider_Survival v38.0 Final Polish
- * Updates: Coffin Collision (Wait to open), Audio Debounce, Smaller Modals.
+ * TombRaider_Survival v39.0 Smooth
+ * Updates: Coffin Collision + Interaction Timer, No-Pause Modal, Audio Debounce.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -229,7 +229,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V38.0",
+        ver: "绝地求生 V39.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -269,7 +269,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V38.0",
+        ver: "Survival V39.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -446,10 +446,10 @@ class Coffin extends Entity {
         // Collision logic (Can't walk through)
         // Handled in Player update
         
-        // Open logic: Must stay close for 0.5s
+        // Open logic: Must stay close for 0.6s
         if(Math.hypot(this.x-p.x, this.y-p.y) < 45) {
             this.interactTimer += dt;
-            if(this.interactTimer > 0.5) {
+            if(this.interactTimer > 0.6) {
                 this.open();
             }
         } else {
@@ -519,10 +519,10 @@ class Coffin extends Entity {
         if(this.opened) ctx.restore();
         ctx.restore();
         
-        // Progress bar if interacting
+        // Progress bar
         if(this.interactTimer > 0 && !this.opened) {
             ctx.fillStyle = '#0f0';
-            ctx.fillRect(-20, -60, 40 * (this.interactTimer/0.5), 5);
+            ctx.fillRect(-20, -60, 40 * (this.interactTimer/0.6), 5);
         }
     }
 }
@@ -697,6 +697,8 @@ const MapSys = {
                 }
             }
         }
+        const last = rms[rms.length-1];
+        for(let Y=last.y; Y<last.y+last.h; Y++) for(let X=last.x; X<last.x+last.w; X++) this.t[Y*this.w+X] = 2;
         return rms;
     },
     get: function(px,py){
@@ -853,7 +855,7 @@ const Game = {
         
         const lName = LANG[curLang].levelNames[Math.min(l-1,9)];
         const splash = document.getElementById('level-title-text');
-        const levelStr = LANG[curLang].level.replace('%s', l);
+        const levelStr = LANG[curLang].level.replace('%s', l).split('|')[0].trim(); // Fix %m logic
         splash.innerText = `${levelStr} | ${lName}`;
         document.getElementById('level-title-box').classList.remove('show-level-title');
         void document.getElementById('level-title-box').offsetWidth;
@@ -863,7 +865,10 @@ const Game = {
     showModal: function(t,i,d,c) {
         document.getElementById('item-title').innerText=t; document.getElementById('item-title').style.color=c||'#ffd700';
         document.getElementById('item-icon').innerText=i; document.getElementById('item-desc').innerHTML=d;
-        document.getElementById('item-modal').classList.add('active'); this.pause=true;
+        document.getElementById('item-modal').classList.add('active'); 
+        // NO PAUSE: this.pause=true; removed
+        
+        // Auto Close Feature
         setTimeout(() => {
              if(document.getElementById('item-modal').classList.contains('active')) {
                  this.closeModal();
@@ -891,6 +896,8 @@ const Game = {
                 }
             }
         };
+        // Immediate effect if not pausing
+        if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
     },
     getItem: function(c) {
         AudioSys.playItem(true);
@@ -898,9 +905,9 @@ const Game = {
         const item = LANG[curLang].items[key];
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const col = colors[key];
-        const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         
-        this.showModal(item.n, iconMap[key], item.d, col);
+        this.showModal(item.n, '📦', item.d, col); // Using box icon generic here or map specific if needed, kept generic to simplify code flow
+        
         this.pendingEffect = ()=>{
             AudioSys.playUse();
             if(c==='item_candle'){ this.p.sight+=150; this.msg(LANG[curLang].msgs.candle, col); this.addItemIcon('🪔'); }
@@ -909,13 +916,20 @@ const Game = {
             if(c==='item_hoof'){ this.p.buffs.hoof=15; this.msg(LANG[curLang].msgs.repel, col); this.addItemIcon('🐴'); }
             if(c==='item_jade'){ this.p.buffs.jade=15; this.msg(LANG[curLang].msgs.immune, col); this.addItemIcon('🥋'); }
         };
+        // Immediate
+        if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
     },
     
     spawn: function(e){this.ents.push(e);},
     msg: function(t,c){const b=document.getElementById('msg-box');b.innerHTML=t;b.style.color=c;b.classList.add('msg-show');setTimeout(()=>b.classList.remove('msg-show'),2000);},
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
-        document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
+        
+        // Fix: %m garbage removal. Reconstruct level string properly.
+        const lName = LANG[curLang].levelNames[Math.min(this.lvl-1,9)];
+        const levelBase = LANG[curLang].level.split('|')[0].replace('%s', this.lvl).trim();
+        document.getElementById('level-num').innerText = `${levelBase} | ${lName}`;
+        
         document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
@@ -938,7 +952,7 @@ const Game = {
         if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 ${Math.ceil(this.p.buffs.jade)}s</div>`;
         if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-compass">🧭 ON</div>`;
         
-        const dt=0.016; // Fixed step for consistency
+        const dt=0.016; 
         this.ents = this.ents.filter(e=>!e.dead);
         this.ents.sort((a,b)=>a.y-b.y);
         
