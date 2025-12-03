@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v37.0 Final Perfect)</title>
+    <title>寻龙诀:绝地求生 (v38.0 Final Polish)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -66,16 +66,17 @@
         }
         .overlay.active { display: flex; opacity: 1; }
         
-        /* Item Card */
+        /* SMALLER Item Card */
         #item-card {
             background: linear-gradient(145deg, #1a120b, #2c1e16); border: 2px solid #8d6e63;
-            padding: 30px; border-radius: 15px; text-align: center;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8); max-width: 80%; width: 300px;
+            padding: 20px; border-radius: 10px; text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); max-width: 60%; width: 250px; /* Smaller */
+            transform: scale(0.9); transition: transform 0.2s;
         }
-        #item-icon { font-size: 80px; margin-bottom: 20px; display: block; animation: floatIcon 3s ease-in-out infinite; }
-        #item-title { color: #ffd700; font-size: 32px; margin: 0 0 15px 0; font-family: "Times New Roman", serif; border-bottom: 1px solid #5d4037; padding-bottom: 10px; }
-        #item-desc { color: #d7ccc8; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
-        .btn { padding: 12px 35px; font-size: 20px; background: #3e2723; color: #ffd700; border: 1px solid #8d6e63; cursor: pointer; font-family:serif; pointer-events: auto; user-select: none; transition: 0.2s; }
+        #item-icon { font-size: 60px; margin-bottom: 10px; display: block; animation: floatIcon 3s ease-in-out infinite; }
+        #item-title { color: #ffd700; font-size: 24px; margin: 0 0 10px 0; font-family: "Times New Roman", serif; border-bottom: 1px solid #5d4037; padding-bottom: 5px; }
+        #item-desc { color: #d7ccc8; font-size: 14px; line-height: 1.4; margin-bottom: 15px; }
+        .btn { padding: 10px 30px; font-size: 18px; background: #3e2723; color: #ffd700; border: 1px solid #8d6e63; cursor: pointer; font-family:serif; pointer-events: auto; user-select: none; transition: 0.2s; }
         .btn:active { transform: scale(0.95); }
 
         /* End Screens */
@@ -124,22 +125,22 @@
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
 </div>
 
-<!-- Item Modal -->
+<!-- Item Modal (Smaller) -->
 <div id="item-modal" class="overlay">
     <div id="item-card">
         <span id="item-icon">📦</span>
         <h2 id="item-title">物品</h2>
         <p id="item-desc">描述</p>
-        <div style="color:#aaa; font-size:12px; margin-top:20px;">(自动关闭 / Auto Close)</div>
+        <div style="color:#aaa; font-size:10px; margin-top:10px;">(自动关闭 / Auto Close)</div>
     </div>
 </div>
 
 <!-- Exit Confirm Modal -->
 <div id="exit-modal" class="overlay">
-    <div id="item-card">
+    <div id="item-card" style="max-width:80%; width:300px;">
         <span id="item-icon">🕳️</span>
         <h2 id="exit-title" style="color:#ffd700">发现盗洞</h2>
-        <button class="btn" onclick="Game.confirmNextLevel()" style="margin-top:20px; font-size:24px; padding:15px 40px;">进入下一层</button>
+        <button class="btn" onclick="Game.confirmNextLevel()" style="margin-top:10px; font-size:20px; padding:10px 30px;">进入下一层</button>
     </div>
 </div>
 
@@ -162,7 +163,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V37.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V38.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -180,8 +181,8 @@
 
 <script>
 /**
- * TombRaider_Survival v37.0 Final Perfect
- * Fixes: Black Screen (Canvas init), Damage Audio Spam (Debounce), Invulnerability Logic (1.5s)
+ * TombRaider_Survival v38.0 Final Polish
+ * Updates: Coffin Collision (Wait to open), Audio Debounce, Smaller Modals.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -228,7 +229,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V37.0",
+        ver: "绝地求生 V38.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -268,7 +269,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V37.0",
+        ver: "Survival V38.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -312,7 +313,7 @@ let curLang = 'CN';
 
 // --- Audio ---
 const AudioSys = {
-    ctx: null, gain: null,
+    ctx: null, gain: null, lastHurt: 0,
     init: function() {
         try {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -358,7 +359,14 @@ const AudioSys = {
         this.tone(600, 'sawtooth', 0.2, vol, 200); 
     },
     playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
-    playHurt: function() { this.tone(120, 'sawtooth', 0.3, 0.5, 80); setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100); },
+    playHurt: function() { 
+        const now = Date.now();
+        if(now - this.lastHurt > 1000) { // Debounce sound
+            this.tone(120, 'sawtooth', 0.3, 0.5, 80); 
+            setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100);
+            this.lastHurt = now;
+        }
+    },
     playUse: function() { this.tone(400, 'sine', 1.0, 0.2, 800); }
 };
 
@@ -431,9 +439,24 @@ class GroundItem extends Entity {
 }
 
 class Coffin extends Entity {
-    constructor(x,y,c){super(x,y,'coffin');this.content=c;this.opened=0;this.shake=0;this.lidOffset=0;}
-    interact() {
+    constructor(x,y,c){super(x,y,'coffin');this.content=c;this.opened=0;this.shake=0;this.lidOffset=0;this.interactTimer=0;}
+    interact(dt, p) {
         if(this.opened) return;
+        
+        // Collision logic (Can't walk through)
+        // Handled in Player update
+        
+        // Open logic: Must stay close for 0.5s
+        if(Math.hypot(this.x-p.x, this.y-p.y) < 45) {
+            this.interactTimer += dt;
+            if(this.interactTimer > 0.5) {
+                this.open();
+            }
+        } else {
+            this.interactTimer = 0;
+        }
+    }
+    open() {
         this.opened = 1; this.shake = 30; AudioSys.playOpen();
         setTimeout(() => {
             if(this.content === 'artifact') {
@@ -459,7 +482,7 @@ class Coffin extends Entity {
     }
     update(dt) {
         if(this.opened && this.lidOffset < 20) {
-            this.lidOffset += dt * 20; // Slide lid
+            this.lidOffset += dt * 20; 
         }
     }
     draw(ctx) {
@@ -469,17 +492,16 @@ class Coffin extends Entity {
             ctx.fillText(LANG[curLang].labels.coffin, 0, -50);
         }
         ctx.save();
-        ctx.rotate(Math.PI/2); // Horizontal
+        ctx.rotate(Math.PI/2); 
         
-        // Coffin Base
-        ctx.fillStyle = '#212121'; // Inside
+        // Body
+        ctx.fillStyle = '#212121'; 
         ctx.beginPath();
         ctx.moveTo(-18, -35); ctx.lineTo(18, -35); ctx.lineTo(14, 35); ctx.lineTo(-14, 35); ctx.closePath(); ctx.fill();
         
         // Lid
         if(this.opened) {
             ctx.save();
-            // Move lid up-right and rotate
             ctx.translate(this.lidOffset, -this.lidOffset); 
             ctx.rotate(-0.2); 
         }
@@ -489,7 +511,6 @@ class Coffin extends Entity {
         ctx.moveTo(-18, -35); ctx.lineTo(18, -35); ctx.lineTo(14, 35); ctx.lineTo(-14, 35); ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#616161'; ctx.beginPath(); ctx.arc(0, -20, 5, 0, Math.PI*2); ctx.fill();
         
-        // Seal
         if(!this.opened) {
             ctx.fillStyle='#ffd700'; ctx.fillRect(-5,-10,10,20);
             ctx.fillStyle='#b71c1c'; ctx.font='12px serif'; ctx.textAlign="left"; ctx.fillText('敕',-6,5);
@@ -497,6 +518,12 @@ class Coffin extends Entity {
 
         if(this.opened) ctx.restore();
         ctx.restore();
+        
+        // Progress bar if interacting
+        if(this.interactTimer > 0 && !this.opened) {
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(-20, -60, 40 * (this.interactTimer/0.5), 5);
+        }
     }
 }
 
@@ -535,7 +562,7 @@ class Zombie extends Entity {
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
         const isSprinter = this.zType === 1;
-        // Removed text label for sprinter
+        if(isSprinter) { ctx.fillStyle = '#ff5252'; ctx.font='12px serif'; ctx.textAlign='center'; ctx.fillText(LANG[curLang].labels.sprinter, 0, -50); }
         
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
         ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
@@ -607,11 +634,25 @@ class Player extends Entity {
         if(this.buffs.candle>0) this.buffs.candle-=dt;
         if(this.buffs.jade>0) this.buffs.jade-=dt;
         
+        const oldX=this.x, oldY=this.y;
         let s=160; if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
+        
         if(Input.active){
             const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
-            if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
-            if(MapSys.get(this.x,ny)!==TERRAIN.WALL)this.y=ny;
+            
+            // Check Walls
+            if(MapSys.get(nx,this.y)!==TERRAIN.WALL) this.x=nx;
+            if(MapSys.get(this.x,ny)!==TERRAIN.WALL) this.y=ny;
+            
+            // Check Coffin Collision
+            Game.ents.forEach(e => {
+                if(e.type === 'coffin') {
+                    if(Math.hypot(this.x-e.x, this.y-e.y) < 30) {
+                        this.x = oldX; this.y = oldY;
+                    }
+                }
+            });
+            
             this.stepPhase += dt * 10;
             this.walkT+=dt; if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
         } else { this.stepPhase = 0; }
@@ -624,31 +665,15 @@ class Player extends Entity {
     }
     draw(ctx){
         if(this.inv>0&&Date.now()%100<50)return;
-        
         if(this.buffs.hoof>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fillStyle='rgba(161,136,127,0.3)'; ctx.fill(); }
         if(this.buffs.jade>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=2; ctx.stroke(); }
-
         ctx.rotate(Math.atan2(Input.y,Input.x));
-        
-        // Squash & Stretch
-        let scaleX = 1, scaleY = 1;
-        if(Input.active) { scaleX = 1.1; scaleY = 0.9; }
-        ctx.scale(scaleX, scaleY);
-
         const lOffset = Math.sin(this.stepPhase) * 6;
         ctx.fillStyle='#3e2723'; ctx.fillRect(-8, -5 + lOffset, 6, 12); ctx.fillRect(2, -5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 12);
-        
-        // Boots
-        ctx.fillStyle='#d7ccc8'; 
-        ctx.fillRect(-8, 5 + lOffset, 6, 4); 
-        ctx.fillRect(2, 5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 4);
-        
+        ctx.fillStyle='#d7ccc8'; ctx.fillRect(-8, 5 + lOffset, 6, 4); ctx.fillRect(2, 5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 4);
         ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18); ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
         ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
-        
-        // Held Lamp
         ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(12, 5, 3, 0, 6.28); ctx.fill();
-        
         ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
     }
 }
@@ -826,7 +851,6 @@ const Game = {
         }
         this.updateHUD(); 
         
-        // Display Level Name: "Level X | Map Name"
         const lName = LANG[curLang].levelNames[Math.min(l-1,9)];
         const splash = document.getElementById('level-title-text');
         const levelStr = LANG[curLang].level.replace('%s', l);
@@ -840,7 +864,6 @@ const Game = {
         document.getElementById('item-title').innerText=t; document.getElementById('item-title').style.color=c||'#ffd700';
         document.getElementById('item-icon').innerText=i; document.getElementById('item-desc').innerHTML=d;
         document.getElementById('item-modal').classList.add('active'); this.pause=true;
-        // Auto Close Feature
         setTimeout(() => {
              if(document.getElementById('item-modal').classList.contains('active')) {
                  this.closeModal();
@@ -859,7 +882,6 @@ const Game = {
             this.msg(LANG[curLang].msgs.hole, "#0f0"); 
             this.updateHUD();
             
-            // Flood
             const r = this.exitRoom;
             for(let y=r.y; y<r.y+r.h; y++){
                 for(let x=r.x; x<r.x+r.w; x++){
@@ -922,7 +944,7 @@ const Game = {
         
         this.ents.forEach(e=>{
             if(e.update) e.type==='zombie'||e.type==='trap'||e.type==='proj'||e.type==='ground_item'||e.type==='effect'?e.update(dt,this.p):e.update(dt);
-            if(e.type==='coffin'&&!e.opened&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<40) e.interact();
+            if(e.type==='coffin') e.interact(dt, this.p);
         });
         
         this.texts = this.texts.filter(t=>t.life>0);
