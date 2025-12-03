@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v27.0 Visual Remake)</title>
+    <title>寻龙诀:绝地求生 (v28.0 Final Fixed)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -33,6 +33,17 @@
         /* Message Toast */
         #msg-box { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 26px; color: #fff; font-weight: bold; text-shadow: 0 0 10px #000; opacity: 0; transition: opacity 0.5s; z-index: 10; pointer-events: none; }
         .msg-show { opacity: 1 !important; }
+
+        /* Level Title Overlay */
+        #level-title-box {
+            position: absolute; top: 40%; width: 100%; text-align: center; 
+            pointer-events: none; opacity: 0; transition: opacity 1s; z-index: 50;
+        }
+        #level-title-text {
+            font-size: 48px; color: #ffd700; font-family: "Times New Roman", serif;
+            text-shadow: 0 0 20px #000, 0 0 10px #ff6f00; letter-spacing: 5px;
+        }
+        .show-level-title { animation: fadeInOut 3s forwards; }
 
         /* Fullscreen Overlays */
         .overlay { 
@@ -81,6 +92,7 @@
 
         @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes fadeIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes fadeInOut { 0% { opacity:0; transform:scale(0.8); } 20% { opacity:1; transform:scale(1.1); } 80% { opacity:1; transform:scale(1); } 100% { opacity:0; transform:scale(1.2); } }
     </style>
 </head>
 <body>
@@ -91,12 +103,13 @@
         <div id="hp-bar">❤❤❤❤❤</div>
         <div id="level-info">
             <span id="level-num">第 1 层</span>
-            <div style="font-size:14px; margin-top:4px;"><span id="trap-label">机关</span>: <span id="trap-name" style="color:#ff5252">连弩塔</span></div>
+            <!-- Trap name moved to in-game entity -->
             <div id="artifact-bar"><span id="art-label">冥器</span>: 0/10</div>
         </div>
     </div>
     <div id="buff-bar"></div>
     <div id="msg-box"></div>
+    <div id="level-title-box"><div id="level-title-text"></div></div>
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
 </div>
 
@@ -129,7 +142,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V27.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V28.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -152,18 +165,36 @@
 
 <script>
 /**
- * TombRaider_Survival v27.0 Visual Remake
- * Updates: Horizontal Stone Coffins, No Grid Floor, Brick Walls
+ * TombRaider_Survival v28.0 Final Fixed
+ * Fixes: Undefined LEVELS reference in LANG object.
+ * Updates: Trap names on entities, Level title splash, Varied trap visuals.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
 const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
 
-// --- Localization ---
+// Define Level Names & Data separately to avoid circular reference or undefined errors
+const LEVEL_NAMES_CN = ["连弩塔","投石机","滚木阵","喷火口","混合阵","飞刀口","巨石阵","鬼火阵","万箭阵","绝 境"];
+const LEVEL_NAMES_EN = ["Crossbow","Catapult","Rolling Log","Flamethrower","Mixed","Knives","Boulders","Ghost Fire","Arrow Rain","Despair"];
+
+const LEVELS_DATA = [
+    { delay: 1.5, type: 'ARROW', col: '#5d4037' },
+    { delay: 2.0, type: 'STONE', col: '#4e342e' },
+    { delay: 2.5, type: 'LOG', col: '#3e2723' },
+    { delay: 3.0, type: 'FIRE', col: '#bf360c' },
+    { delay: 1.8, type: 'MIX', col: '#263238' },
+    { delay: 1.2, type: 'ARROW', col: '#455a64' },
+    { delay: 4.0, type: 'STONE', col: '#33691e' },
+    { delay: 3.0, type: 'FIRE', col: '#311b92' },
+    { delay: 1.0, type: 'ARROW', col: '#212121' },
+    { delay: 2.0, type: 'MIX', col: '#b71c1c' }
+];
+
+// Localization
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V27.0",
+        ver: "绝地求生 V28.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         p2: "🧟 <b>疾行尸</b>: 极速乱窜，触之伤身",
         p3: "🕯️ <b>红蜡烛</b>: 散落3个，超大视野+罗盘",
@@ -198,11 +229,11 @@ const LANG = {
             immune: "无视机关 15秒!",
             hole: "盗洞已开启!"
         },
-        levels: ["连弩塔","投石机","滚木阵","喷火口","混合阵","飞刀口","巨石阵","鬼火阵","万箭阵","绝 境"]
+        levelNames: LEVEL_NAMES_CN
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V27.0",
+        ver: "Survival V28.0",
         p1: "Ancient tombs hold countless treasures, guarded by traps and zombies. As a Raider, you must descend 10 levels deep. Danger lurks everywhere. Only by finding the <b>Ancient Artifact</b> can you unlock the exit to the next level and return with glory.",
         p2: "🧟 <b>Sprinter</b>: Fast & dangerous",
         p3: "🕯️ <b>Candle</b>: 3 on floor, Vision + Compass",
@@ -237,7 +268,7 @@ const LANG = {
             immune: "Immune 15s!",
             hole: "Exit Opened!"
         },
-        levels: ["Crossbow","Catapult","Rolling Log","Flamethrower","Mixed","Knives","Boulders","Ghost Fire","Arrow Rain","Despair"]
+        levelNames: LEVEL_NAMES_EN
     }
 };
 
@@ -250,19 +281,6 @@ const PROJ_TYPES = {
     FIRE: { spd: 220, size: 6, col: '#ff5722', trail: true },
     LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
 };
-
-const LEVELS_DATA = [
-    { delay: 1.5, type: 'ARROW' },
-    { delay: 2.0, type: 'STONE' },
-    { delay: 2.5, type: 'LOG' },
-    { delay: 3.0, type: 'FIRE' },
-    { delay: 1.8, type: 'MIX' },
-    { delay: 1.2, type: 'ARROW' },
-    { delay: 4.0, type: 'STONE' },
-    { delay: 3.0, type: 'FIRE' },
-    { delay: 1.0, type: 'ARROW' },
-    { delay: 2.0, type: 'MIX' }
-];
 
 // Wall colors for bricks
 const WALL_COLORS = [
@@ -370,9 +388,7 @@ class GroundItem extends Entity {
     }
     draw(ctx) {
         const iKey = this.code.replace('item_', '');
-        const info = LANG[curLang].items[iKey];
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7'};
-        
         const yOff = Math.sin(Date.now()/300)*5;
         const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋'};
         
@@ -408,16 +424,12 @@ class Coffin extends Entity {
             ctx.lineTo(14, 35); ctx.lineTo(-14, 35);
             ctx.closePath(); ctx.fill();
             
-            // Texture details
-            ctx.fillStyle = '#616161';
-            ctx.beginPath(); ctx.arc(0, -20, 5, 0, Math.PI*2); ctx.fill();
-            
-            // Seal
+            ctx.fillStyle = '#616161'; ctx.beginPath(); ctx.arc(0, -20, 5, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle='#ffd700'; ctx.fillRect(-5,-10,10,20);
-            ctx.fillStyle='#b71c1c'; ctx.font='12px serif'; ctx.fillText('敕',-6,5);
+            ctx.fillStyle='#b71c1c'; ctx.font='12px serif'; ctx.textAlign="left"; ctx.fillText('敕',-6,5);
         } else {
-            // Stone Coffin (Opened) - No border
-            ctx.fillStyle = '#212121'; // Dark interior
+            // Stone Coffin (Opened)
+            ctx.fillStyle = '#212121'; 
             ctx.beginPath();
             ctx.moveTo(-16, -33); ctx.lineTo(16, -33);
             ctx.lineTo(12, 33); ctx.lineTo(-12, 33);
@@ -474,7 +486,15 @@ class Zombie extends Entity {
 }
 
 class Trap extends Entity {
-    constructor(x,y,type){super(x,y,'trap');this.life=3;this.cd=Math.random();this.pType=type;}
+    constructor(x,y,lvlIndex){
+        super(x,y,'trap');
+        this.life=3; this.cd=Math.random(); 
+        const data = LEVELS_DATA[Math.min(lvlIndex,9)];
+        this.pType = data.type === 'MIX' ? Object.keys(PROJ_TYPES)[Math.floor(Math.random()*4)] : data.type;
+        this.color = data.col;
+        this.name = LANG[curLang].levelNames[Math.min(lvlIndex,9)]; // Store ref index actually better, but simple string ok for now
+        this.lvlIdx = Math.min(lvlIndex,9);
+    }
     update(dt,p){
         this.cd-=dt;
         if(this.cd<0){
@@ -486,9 +506,13 @@ class Trap extends Entity {
         }
     }
     draw(ctx){
-        ctx.fillStyle='#424242'; ctx.fillRect(-12,-20,24,20);
-        ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-12,-20); ctx.lineTo(-15,0); ctx.lineTo(15,0); ctx.lineTo(12,-20); ctx.fill();
+        ctx.fillStyle=this.color; ctx.fillRect(-15,-20,30,20); // Base
+        ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-15,-20); ctx.lineTo(-18,0); ctx.lineTo(18,0); ctx.lineTo(15,-20); ctx.fill();
         ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
+        
+        // Trap Name on top
+        ctx.fillStyle = '#fff'; ctx.font = '12px serif'; ctx.textAlign='center'; 
+        ctx.fillText(LANG[curLang].levelNames[this.lvlIdx], 0, -40);
     }
 }
 
@@ -600,7 +624,7 @@ const Game = {
         document.getElementById('intro-p4').innerHTML = txt.p4;
         document.getElementById('intro-p5').innerHTML = txt.p5;
         document.getElementById('start-btn-text').innerText = txt.startBtn;
-        document.getElementById('trap-label').innerText = txt.trapLabel;
+        document.getElementById('trap-label').innerText = txt.trapLabel; // Only label
         document.getElementById('art-label').innerText = txt.artLabel;
         document.getElementById('modal-btn-text').innerText = txt.modalBtn;
         document.getElementById('end-title').innerText = txt.endTitle;
@@ -670,15 +694,9 @@ const Game = {
         });
         
         const trapCount = Math.floor(1 + Math.pow(l, 1.2)); 
-        const lData = LEVELS_DATA[Math.min(l-1, 9)];
         for(let i=0; i<trapCount; i++) {
              const r=rms[Math.floor(Math.random()*rms.length)];
-             let tType = lData.type;
-             if(tType === 'MIX') {
-                 const keys = Object.keys(PROJ_TYPES);
-                 tType = keys[Math.floor(Math.random()*keys.length)];
-             }
-             this.ents.push(new Trap(r.x*CONFIG.TILE + Math.random()*r.w*CONFIG.TILE, r.y*CONFIG.TILE + Math.random()*r.h*CONFIG.TILE, tType));
+             this.ents.push(new Trap(r.x*CONFIG.TILE + Math.random()*r.w*CONFIG.TILE, r.y*CONFIG.TILE + Math.random()*r.h*CONFIG.TILE, l-1));
         }
         
         this.exitPos = {x:(e.x+e.w/2)*CONFIG.TILE, y:(e.y+e.h/2)*CONFIG.TILE};
@@ -688,7 +706,14 @@ const Game = {
             const isSprinter = Math.random() < 0.2 ? 1 : 0;
             this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, isSprinter));
         }
-        this.updateHUD(); this.msg(LANG[curLang].msgs.start.replace('%s', l), '#fff');
+        this.updateHUD(); 
+        // Splash Level Name
+        const lName = LANG[curLang].levelNames[Math.min(l-1,9)];
+        const splash = document.getElementById('level-title-text');
+        splash.innerText = lName;
+        document.getElementById('level-title-box').classList.remove('show-level-title');
+        void document.getElementById('level-title-box').offsetWidth; // Trigger reflow
+        document.getElementById('level-title-box').classList.add('show-level-title');
     },
     
     showModal: function(t,i,d,c) {
@@ -728,7 +753,8 @@ const Game = {
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
         document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
-        document.getElementById('trap-name').innerText = LANG[curLang].levels[Math.min(this.lvl-1,9)];
+        // Trap name removed from top-right, handled by entities now
+        document.getElementById('trap-name').innerText = ""; 
         document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
@@ -779,7 +805,6 @@ const Game = {
         
         const cs=Math.floor(cx/CONFIG.TILE), ce=cs+w/CONFIG.TILE+2;
         const rs=Math.floor(cy/CONFIG.TILE), re=rs+h/CONFIG.TILE+2;
-        const ldata=LEVELS_DATA[Math.min(this.lvl-1,9)];
         const wallCol = WALL_COLORS[Math.min(this.lvl-1,9)];
         const now = Date.now();
         
@@ -790,9 +815,7 @@ const Game = {
                 
                 if(t==0){ // Floor (No Grid)
                     ctx.fillStyle='#2d241e'; ctx.fillRect(px,py,50,50);
-                    // Minimal noise texture
-                    ctx.fillStyle='rgba(0,0,0,0.1)';
-                    if((x+y)%5===0) ctx.fillRect(px+10,py+10,5,5);
+                    ctx.fillStyle='rgba(0,0,0,0.1)'; if((x+y)%5===0) ctx.fillRect(px+10,py+10,5,5);
                 } 
                 else if(t==2) { // Water
                     ctx.fillStyle='#01579b';ctx.fillRect(px,py,50,50);
@@ -804,11 +827,9 @@ const Game = {
                     ctx.fillStyle = wallCol; ctx.fillRect(px, py, 50, 50);
                     ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
                     ctx.beginPath();
-                    // Horizontal lines
                     ctx.moveTo(px, py); ctx.lineTo(px+50, py);
                     ctx.moveTo(px, py+25); ctx.lineTo(px+50, py+25);
                     ctx.moveTo(px, py+50); ctx.lineTo(px+50, py+50);
-                    // Vertical lines (staggered)
                     ctx.moveTo(px, py); ctx.lineTo(px, py+25);
                     ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50);
                     ctx.moveTo(px+50, py); ctx.lineTo(px+50, py+25);
