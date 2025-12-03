@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v28.0 Final Fixed)</title>
+    <title>寻龙诀:绝地求生 (v30.0 Final Complete)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -29,6 +29,7 @@
         .buff-hoof { border-color: #a1887f; }
         .buff-candle { border-color: #ff5252; }
         .buff-jade { border-color: #a5d6a7; color: #a5d6a7; }
+        .buff-compass { border-color: #ffd700; color: #ffd700; }
         
         /* Message Toast */
         #msg-box { position: absolute; top: 20%; width: 100%; text-align: center; font-size: 26px; color: #fff; font-weight: bold; text-shadow: 0 0 10px #000; opacity: 0; transition: opacity 0.5s; z-index: 10; pointer-events: none; }
@@ -103,7 +104,7 @@
         <div id="hp-bar">❤❤❤❤❤</div>
         <div id="level-info">
             <span id="level-num">第 1 层</span>
-            <!-- Trap name moved to in-game entity -->
+            <!-- Removed trap-name here, now on entity/splash -->
             <div id="artifact-bar"><span id="art-label">冥器</span>: 0/10</div>
         </div>
     </div>
@@ -142,7 +143,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V28.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V30.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -150,8 +151,8 @@
         </p>
         <hr style="border-color: #3e2723; margin: 15px 0;">
         <p id="intro-p2" style="color:#e57373">🧟 <b>疾行尸</b>: 极速乱窜，触之伤身</p>
-        <p id="intro-p3" style="color:#ff8a80">🕯️ <b>红蜡烛</b>: 散落3个，超大视野+罗盘</p>
-        <p id="intro-p4" style="color:#bcaaa4">🐴 <b>黑驴蹄</b>: 僵尸退避15秒</p>
+        <p id="intro-p3" style="color:#ff8a80">🕯️ <b>蜡烛</b>: 散落3个，超大视野</p>
+        <p id="intro-p4" style="color:#ffd700">🧭 <b>罗盘</b>: 寻金定穴，指引方向</p>
         <p id="intro-p5" style="color:#a5d6a7">🥋 <b>玉 衣</b>: 机关免疫15秒</p>
     </div>
     
@@ -165,17 +166,21 @@
 
 <script>
 /**
- * TombRaider_Survival v28.0 Final Fixed
- * Fixes: Undefined LEVELS reference in LANG object.
- * Updates: Trap names on entities, Level title splash, Varied trap visuals.
+ * TombRaider_Survival v30.0 Final Complete
+ * Updates: New Level Names, Coffin Text Prompts, Fixed Trap Auto-Attack.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
 const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
 
-// Define Level Names & Data separately to avoid circular reference or undefined errors
-const LEVEL_NAMES_CN = ["连弩塔","投石机","滚木阵","喷火口","混合阵","飞刀口","巨石阵","鬼火阵","万箭阵","绝 境"];
-const LEVEL_NAMES_EN = ["Crossbow","Catapult","Rolling Log","Flamethrower","Mixed","Knives","Boulders","Ghost Fire","Arrow Rain","Despair"];
+const LEVEL_NAMES_CN = [
+    "沙海迷冢", "千纹机关廊", "青铜兽影厅", "巨鼎炼魂室", "石骨迷宫",
+    "荧光棺河", "九字封印井", "暗影葬主殿", "帝王沉眠室", "永劫天陨塔"
+];
+const LEVEL_NAMES_EN = [
+    "Sand Sea Tomb", "Thousand Traps", "Bronze Beast Hall", "Cauldron Chamber", "Bone Labyrinth",
+    "Fluorescent River", "Nine Seal Well", "Shadow Burial", "Emperor's Sleep", "Eternal Fall Tower"
+];
 
 const LEVELS_DATA = [
     { delay: 1.5, type: 'ARROW', col: '#5d4037' },
@@ -190,99 +195,6 @@ const LEVELS_DATA = [
     { delay: 2.0, type: 'MIX', col: '#b71c1c' }
 ];
 
-// Localization
-const LANG = {
-    CN: {
-        title: "寻龙诀",
-        ver: "绝地求生 V28.0",
-        p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
-        p2: "🧟 <b>疾行尸</b>: 极速乱窜，触之伤身",
-        p3: "🕯️ <b>红蜡烛</b>: 散落3个，超大视野+罗盘",
-        p4: "🐴 <b>黑驴蹄</b>: 僵尸退避15秒",
-        p5: "🥋 <b>玉 衣</b>: 机关免疫15秒",
-        startBtn: "点灯摸金",
-        level: "第 %s 层",
-        trapLabel: "机关",
-        artLabel: "冥器",
-        modalBtn: "收入囊中",
-        endTitle: "胜败乃兵家常事",
-        endDesc: "大侠请重新来过",
-        endBtn: "再探古墓",
-        winTitle: "摸金校尉 凯旋",
-        winDesc: "找到冥器，逃出生天！",
-        winBtn: "再来一局",
-        items: {
-            candle: {n:"红蜡烛", d:"<b>黄金罗盘</b>: 视野大幅扩大 + 指引盗洞。"},
-            wine: {n:"糯米酒", d:"<b>祛阴补阳</b>: 恢复 1 点生命值。"},
-            hoof: {n:"黑驴蹄子", d:"<b>生人勿近</b>: 僵尸退避 15 秒。"},
-            jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫机关伤害 15 秒。"}
-        },
-        msgs: {
-            start: "进入第 %s 层",
-            hurt: "受到伤害!",
-            empty: "空空如也...",
-            trap: "大凶! 机关触发!",
-            zombie: "起尸了!",
-            compass: "罗盘激活! 视野大开!",
-            heal: "生命恢复!",
-            repel: "尸畏 15秒!",
-            immune: "无视机关 15秒!",
-            hole: "盗洞已开启!"
-        },
-        levelNames: LEVEL_NAMES_CN
-    },
-    EN: {
-        title: "Tomb Raider",
-        ver: "Survival V28.0",
-        p1: "Ancient tombs hold countless treasures, guarded by traps and zombies. As a Raider, you must descend 10 levels deep. Danger lurks everywhere. Only by finding the <b>Ancient Artifact</b> can you unlock the exit to the next level and return with glory.",
-        p2: "🧟 <b>Sprinter</b>: Fast & dangerous",
-        p3: "🕯️ <b>Candle</b>: 3 on floor, Vision + Compass",
-        p4: "🐴 <b>Hoof</b>: Repel zombies 15s",
-        p5: "🥋 <b>Jade Suit</b>: Trap immunity 15s",
-        startBtn: "Start Raid",
-        level: "Level %s",
-        trapLabel: "Trap",
-        artLabel: "Relic",
-        modalBtn: "Collect",
-        endTitle: "You Died",
-        endDesc: "Better luck next time.",
-        endBtn: "Try Again",
-        winTitle: "Victory!",
-        winDesc: "Artifacts found. You survived!",
-        winBtn: "Play Again",
-        items: {
-            candle: {n:"Red Candle", d:"<b>Golden Compass</b>: Max Vision + Exit Guide."},
-            wine: {n:"Rice Wine", d:"<b>Vitality</b>: Restore 1 HP."},
-            hoof: {n:"Donkey Hoof", d:"<b>Repel</b>: Zombies fear you for 15s."},
-            jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to traps for 15s."}
-        },
-        msgs: {
-            start: "Entered Level %s",
-            hurt: "Took Damage!",
-            empty: "Empty...",
-            trap: "Trap Triggered!",
-            zombie: "Zombie Rise!",
-            compass: "Compass Active!",
-            heal: "HP Restored!",
-            repel: "Repel 15s!",
-            immune: "Immune 15s!",
-            hole: "Exit Opened!"
-        },
-        levelNames: LEVEL_NAMES_EN
-    }
-};
-
-let curLang = 'CN';
-
-// --- Data ---
-const PROJ_TYPES = {
-    ARROW: { spd: 350, size: 3, col: '#eee', trail: true },
-    STONE: { spd: 180, size: 10, col: '#795548', trail: false },
-    FIRE: { spd: 220, size: 6, col: '#ff5722', trail: true },
-    LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
-};
-
-// Wall colors for bricks
 const WALL_COLORS = [
     '#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', 
     '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'
@@ -301,7 +213,93 @@ const ARTIFACTS = [
     {n: "彼岸花",   en: "Equinox Flower", i: "🌺", d: "通往彼岸的神秘之花，终极宝藏。", end: "The ultimate treasure."}
 ];
 
-const SPECIAL_ITEMS = ['item_candle', 'item_wine', 'item_hoof', 'item_jade'];
+const SPECIAL_ITEMS = ['item_candle', 'item_wine', 'item_hoof', 'item_jade', 'item_compass'];
+
+// --- Localization ---
+const LANG = {
+    CN: {
+        title: "寻龙诀",
+        ver: "绝地求生 V30.0",
+        p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
+        p2: "🧟 <b>疾行尸</b>: 极速乱窜，触之伤身",
+        p3: "🕯️ <b>蜡烛</b>: 散落3个，超大视野",
+        p4: "🐴 <b>黑驴蹄</b>: 僵尸退避15秒",
+        p5: "🥋 <b>玉 衣</b>: 机关免疫15秒 | 🧭 <b>罗盘</b>: 寻金定穴",
+        startBtn: "点灯摸金",
+        level: "第 %s 层",
+        artLabel: "冥器",
+        modalBtn: "收入囊中",
+        endTitle: "胜败乃兵家常事",
+        endDesc: "大侠请重新来过",
+        endBtn: "再探古墓",
+        winTitle: "摸金校尉 凯旋",
+        winDesc: "找到冥器，逃出生天！",
+        winBtn: "再来一局",
+        items: {
+            candle: {n:"蜡烛", d:"<b>光照四方</b>: 视野大幅扩大。"},
+            wine: {n:"糯米酒", d:"<b>祛阴补阳</b>: 恢复 1 点生命值。"},
+            hoof: {n:"黑驴蹄子", d:"<b>生人勿近</b>: 僵尸退避 15 秒。"},
+            jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫机关伤害 15 秒。"},
+            compass: {n:"风水罗盘", d:"<b>寻龙分金</b>: 指向冥器棺材，得手后指向盗洞。"}
+        },
+        msgs: {
+            start: "进入第 %s 层",
+            hurt: "受到伤害!",
+            empty: "空空如也...",
+            trap: "大凶! 机关触发!",
+            zombie: "起尸了!",
+            candle: "视野扩大!",
+            compass: "罗盘在手! 寻龙分金!",
+            heal: "生命恢复!",
+            repel: "尸畏 15秒!",
+            immune: "无视机关 15秒!",
+            hole: "盗洞已开启!"
+        },
+        levelNames: LEVEL_NAMES_CN
+    },
+    EN: {
+        title: "Tomb Raider",
+        ver: "Survival V30.0",
+        p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
+        p2: "🧟 <b>Sprinter</b>: Fast & dangerous",
+        p3: "🕯️ <b>Candle</b>: Max Vision",
+        p4: "🐴 <b>Hoof</b>: Repel zombies 15s",
+        p5: "🥋 <b>Jade Suit</b>: Immune 15s | 🧭 <b>Compass</b>: Find Artifact/Exit",
+        startBtn: "Start Raid",
+        level: "Level %s",
+        artLabel: "Relic",
+        modalBtn: "Collect",
+        endTitle: "You Died",
+        endDesc: "Better luck next time.",
+        endBtn: "Try Again",
+        winTitle: "Victory!",
+        winDesc: "Artifacts found. You survived!",
+        winBtn: "Play Again",
+        items: {
+            candle: {n:"Candle", d:"<b>Bright Light</b>: Max Vision Range."},
+            wine: {n:"Rice Wine", d:"<b>Vitality</b>: Restore 1 HP."},
+            hoof: {n:"Donkey Hoof", d:"<b>Repel</b>: Zombies fear you for 15s."},
+            jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to traps for 15s."},
+            compass: {n:"Compass", d:"<b>Feng Shui</b>: Points to Artifact, then Exit."}
+        },
+        msgs: {
+            start: "Entered Level %s",
+            hurt: "Took Damage!",
+            empty: "Empty...",
+            trap: "Trap Triggered!",
+            zombie: "Zombie Rise!",
+            candle: "Vision Up!",
+            compass: "Compass Active!",
+            heal: "HP Restored!",
+            repel: "Repel 15s!",
+            immune: "Immune 15s!",
+            hole: "Exit Opened!"
+        },
+        levelNames: LEVEL_NAMES_EN
+    }
+};
+
+let curLang = 'CN';
 
 // --- Audio ---
 const AudioSys = {
@@ -375,6 +373,15 @@ const Input = { x:0, y:0, active:false };
     window.addEventListener('mouseup',e=>{if(Input.m){Input.m=0;h(e,1)}});
 })();
 
+class FloatText {
+    constructor(x,y,t,c){this.x=x;this.y=y;this.t=t;this.c=c;this.life=60;}
+    update(){this.y-=0.5;this.life--;}
+    draw(ctx){
+        ctx.globalAlpha=this.life/60; ctx.fillStyle=this.c; ctx.font="bold 16px serif"; ctx.textAlign="center";
+        ctx.fillText(this.t,this.x,this.y); ctx.globalAlpha=1;
+    }
+}
+
 // --- Entities ---
 class Entity { constructor(x,y,t){this.x=x;this.y=y;this.type=t;this.dead=0;} }
 
@@ -388,10 +395,9 @@ class GroundItem extends Entity {
     }
     draw(ctx) {
         const iKey = this.code.replace('item_', '');
-        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7'};
+        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const yOff = Math.sin(Date.now()/300)*5;
-        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋'};
-        
+        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         ctx.font = "24px serif"; ctx.textAlign = "center";
         ctx.fillText(iconMap[iKey], 0, yOff);
         ctx.shadowBlur=15; ctx.shadowColor=colors[iKey];
@@ -406,34 +412,36 @@ class Coffin extends Entity {
         if(this.opened) return;
         this.opened = 1; this.shake = 30; AudioSys.playOpen();
         setTimeout(() => {
-            if(this.content === 'artifact') Game.getArtifact();
-            else if(this.content === 'zombie') { Game.spawn(new Zombie(this.x,this.y+20, 0)); Game.msg(LANG[curLang].msgs.zombie, "#f44336"); AudioSys.playAttack(); }
-            else { Game.msg(LANG[curLang].msgs.empty, "#aaa"); }
+            if(this.content === 'artifact') {
+                Game.getArtifact();
+                Game.addText(this.x, this.y, ARTIFACTS[Game.lvl-1][curLang==='CN'?'n':'en'], '#ffd700');
+            }
+            else if(this.content === 'zombie') { 
+                Game.spawn(new Zombie(this.x,this.y+20, 0)); 
+                Game.addText(this.x, this.y, LANG[curLang].msgs.zombie, '#f44336');
+                AudioSys.playAttack(); 
+            }
+            else if(this.content === 'trap') {
+                 Game.spawn(new Trap(this.x,this.y+40, Game.lvl-1));
+                 Game.addText(this.x, this.y, LANG[curLang].msgs.trap, '#f44336');
+                 AudioSys.playTrap(0);
+            }
+            else { Game.addText(this.x, this.y, LANG[curLang].msgs.empty, '#aaa'); }
         }, 600);
     }
     draw(ctx) {
         if(this.shake>0){ctx.translate((Math.random()-.5)*4,0);this.shake--;}
         ctx.save();
-        ctx.rotate(Math.PI/2); // Horizontal
-        
+        ctx.rotate(Math.PI/2); 
         if(!this.opened){
-            // Stone Coffin (Closed)
-            ctx.fillStyle = '#757575'; // Grey stone
-            ctx.beginPath();
-            ctx.moveTo(-18, -35); ctx.lineTo(18, -35); 
-            ctx.lineTo(14, 35); ctx.lineTo(-14, 35);
-            ctx.closePath(); ctx.fill();
-            
+            ctx.fillStyle = '#757575'; ctx.beginPath();
+            ctx.moveTo(-18, -35); ctx.lineTo(18, -35); ctx.lineTo(14, 35); ctx.lineTo(-14, 35); ctx.closePath(); ctx.fill();
             ctx.fillStyle = '#616161'; ctx.beginPath(); ctx.arc(0, -20, 5, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle='#ffd700'; ctx.fillRect(-5,-10,10,20);
             ctx.fillStyle='#b71c1c'; ctx.font='12px serif'; ctx.textAlign="left"; ctx.fillText('敕',-6,5);
         } else {
-            // Stone Coffin (Opened)
-            ctx.fillStyle = '#212121'; 
-            ctx.beginPath();
-            ctx.moveTo(-16, -33); ctx.lineTo(16, -33);
-            ctx.lineTo(12, 33); ctx.lineTo(-12, 33);
-            ctx.fill();
+            ctx.fillStyle = '#212121'; ctx.beginPath();
+            ctx.moveTo(-16, -33); ctx.lineTo(16, -33); ctx.lineTo(12, 33); ctx.lineTo(-12, 33); ctx.fill();
         }
         ctx.restore();
     }
@@ -468,7 +476,6 @@ class Zombie extends Entity {
             this.x += vx * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.x = oldX; this.dir = Math.PI - this.dir; }
             this.y += vy * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.y = oldY; this.dir = -this.dir; }
         }
-        
         if(!repel && d<20) { p.hit(); AudioSys.playAttack(); }
         this.hop = Math.abs(Math.sin(Date.now()/(this.zType===1?100:200)))*-8;
     }
@@ -492,25 +499,26 @@ class Trap extends Entity {
         const data = LEVELS_DATA[Math.min(lvlIndex,9)];
         this.pType = data.type === 'MIX' ? Object.keys(PROJ_TYPES)[Math.floor(Math.random()*4)] : data.type;
         this.color = data.col;
-        this.name = LANG[curLang].levelNames[Math.min(lvlIndex,9)]; // Store ref index actually better, but simple string ok for now
+        this.name = LANG[curLang].levelNames[Math.min(lvlIndex,9)]; 
         this.lvlIdx = Math.min(lvlIndex,9);
     }
     update(dt,p){
-        this.cd-=dt;
-        if(this.cd<0){
-            this.cd = 1.0 + Math.random()*0.5;
-            const pdx=p.x-this.x, pdy=p.y-this.y, ang=Math.atan2(pdy,pdx);
-            const dist = Math.hypot(this.x-p.x, this.y-p.y);
-            Game.spawn(new Projectile(this.x,this.y,ang,this.pType)); 
-            AudioSys.playTrap(dist);
+        // Check distance to player. If close enough, start cooldown loop
+        const dist = Math.hypot(this.x-p.x, this.y-p.y);
+        if(dist < 400) {
+            this.cd-=dt;
+            if(this.cd<0){
+                this.cd = 1.5 + Math.random()*0.5; // Slower fire rate for fairness
+                const pdx=p.x-this.x, pdy=p.y-this.y, ang=Math.atan2(pdy,pdx);
+                Game.spawn(new Projectile(this.x,this.y,ang,this.pType)); 
+                AudioSys.playTrap(dist);
+            }
         }
     }
     draw(ctx){
         ctx.fillStyle=this.color; ctx.fillRect(-15,-20,30,20); // Base
         ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-15,-20); ctx.lineTo(-18,0); ctx.lineTo(18,0); ctx.lineTo(15,-20); ctx.fill();
         ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
-        
-        // Trap Name on top
         ctx.fillStyle = '#fff'; ctx.font = '12px serif'; ctx.textAlign='center'; 
         ctx.fillText(LANG[curLang].levelNames[this.lvlIdx], 0, -40);
     }
@@ -607,7 +615,7 @@ const MapSys = {
 // --- Game Engine ---
 const Game = {
     cvs:document.getElementById('gameCanvas'), ctx:document.getElementById('gameCanvas').getContext('2d'),
-    ents:[], lvl:1, art:0, exit:0, pause:0, shake:0, running:0,
+    ents:[], texts:[], lvl:1, art:0, exit:0, pause:0, shake:0, running:0, artifactPos: null,
     
     toggleLang: function() {
         curLang = curLang === 'CN' ? 'EN' : 'CN';
@@ -624,7 +632,6 @@ const Game = {
         document.getElementById('intro-p4').innerHTML = txt.p4;
         document.getElementById('intro-p5').innerHTML = txt.p5;
         document.getElementById('start-btn-text').innerText = txt.startBtn;
-        document.getElementById('trap-label').innerText = txt.trapLabel; // Only label
         document.getElementById('art-label').innerText = txt.artLabel;
         document.getElementById('modal-btn-text').innerText = txt.modalBtn;
         document.getElementById('end-title').innerText = txt.endTitle;
@@ -657,9 +664,13 @@ const Game = {
         this.pause = false;
         if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
     },
+    
+    addText: function(x, y, text, color) {
+        this.texts.push(new FloatText(x, y, text, color));
+    },
 
     load: function(l){
-        this.lvl=l; this.ents=[]; this.exit=0;
+        this.lvl=l; this.ents=[]; this.texts=[]; this.exit=0; this.artifactPos = null;
         const rms=MapSys.gen(l), s=rms[0], e=rms[rms.length-1];
         this.p=new Player((s.x+s.w/2)*CONFIG.TILE, (s.y+s.h/2)*CONFIG.TILE);
         if(this.saved) { this.p.hp=this.saved.hp; }
@@ -671,7 +682,7 @@ const Game = {
              corners.push({x:(r.x+r.w)*CONFIG.TILE-25, y:(r.y+r.h)*CONFIG.TILE-25});
         });
         
-        ['item_wine', 'item_hoof', 'item_jade', 'item_candle', 'item_candle', 'item_candle'].forEach(code => {
+        ['item_wine', 'item_hoof', 'item_jade', 'item_candle', 'item_candle', 'item_candle', 'item_compass'].forEach(code => {
              if(corners.length>0) {
                  const ri = Math.floor(Math.random()*corners.length);
                  this.ents.push(new GroundItem(corners[ri].x, corners[ri].y, code));
@@ -685,6 +696,7 @@ const Game = {
         if(spots.length>0) {
             const ai = Math.floor(Math.random()*spots.length);
             this.ents.push(new Coffin(spots[ai].x, spots[ai].y, 'artifact'));
+            this.artifactPos = {x: spots[ai].x, y: spots[ai].y};
             spots.splice(ai,1);
         }
         
@@ -707,12 +719,12 @@ const Game = {
             this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, isSprinter));
         }
         this.updateHUD(); 
-        // Splash Level Name
+        
         const lName = LANG[curLang].levelNames[Math.min(l-1,9)];
         const splash = document.getElementById('level-title-text');
         splash.innerText = lName;
         document.getElementById('level-title-box').classList.remove('show-level-title');
-        void document.getElementById('level-title-box').offsetWidth; // Trigger reflow
+        void document.getElementById('level-title-box').offsetWidth;
         document.getElementById('level-title-box').classList.add('show-level-title');
     },
     
@@ -734,14 +746,15 @@ const Game = {
         AudioSys.playItem(true);
         const key = c.replace('item_','');
         const item = LANG[curLang].items[key];
-        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7'};
+        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const col = colors[key];
-        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋'};
+        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         
         this.showModal(item.n, iconMap[key], item.d, col);
         this.pendingEffect = ()=>{
             AudioSys.playUse();
-            if(c==='item_candle'){ this.p.sight+=150; this.p.hasCompass=1; this.msg(LANG[curLang].msgs.compass, col); }
+            if(c==='item_candle'){ this.p.sight+=150; this.msg(LANG[curLang].msgs.candle, col); }
+            if(c==='item_compass'){ this.p.hasCompass=1; this.msg(LANG[curLang].msgs.compass, col); }
             if(c==='item_wine'){ this.p.hp=Math.min(5,this.p.hp+1); this.msg(LANG[curLang].msgs.heal, col); this.updateHUD(); }
             if(c==='item_hoof'){ this.p.buffs.hoof=15; this.msg(LANG[curLang].msgs.repel, col); }
             if(c==='item_jade'){ this.p.buffs.jade=15; this.msg(LANG[curLang].msgs.immune, col); }
@@ -753,8 +766,6 @@ const Game = {
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
         document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
-        // Trap name removed from top-right, handled by entities now
-        document.getElementById('trap-name').innerText = ""; 
         document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
@@ -775,7 +786,7 @@ const Game = {
         const bb = document.getElementById('buff-bar'); bb.innerHTML='';
         if(this.p.buffs.hoof>0) bb.innerHTML+=`<div class="buff buff-hoof">🐴 ${Math.ceil(this.p.buffs.hoof)}s</div>`;
         if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 ${Math.ceil(this.p.buffs.jade)}s</div>`;
-        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-candle">🕯️ ON</div>`;
+        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-compass">🧭 ON</div>`;
         
         const dt=0.016;
         this.ents = this.ents.filter(e=>!e.dead);
@@ -785,6 +796,10 @@ const Game = {
             if(e.update) e.type==='zombie'||e.type==='trap'||e.type==='proj'||e.type==='ground_item'?e.update(dt,this.p):e.update(dt);
             if(e.type==='coffin'&&!e.opened&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<40) e.interact();
         });
+        
+        // Texts update
+        this.texts = this.texts.filter(t=>t.life>0);
+        this.texts.forEach(t=>t.update());
         
         if(this.exit && Math.hypot(this.exitPos.x-this.p.x, this.exitPos.y-this.p.y)<30){
             if(this.lvl>=10){ this.victory(); }
@@ -855,13 +870,24 @@ const Game = {
             ctx.restore();
         });
         
-        if(this.exit && this.p.hasCompass) {
-            const dx=this.exitPos.x-this.p.x, dy=this.exitPos.y-this.p.y;
-            const ang=Math.atan2(dy,dx);
-            ctx.translate(this.p.x, this.p.y); ctx.rotate(ang); ctx.translate(70, 0);
-            ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
-            ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
-            ctx.shadowBlur=0;
+        this.texts.forEach(t=>{
+            ctx.save(); ctx.translate(t.x,t.y); t.draw(ctx); ctx.restore();
+        });
+        
+        // Compass Logic
+        if(this.p.hasCompass) {
+            let target = null;
+            if(!this.exit && this.artifactPos) target = this.artifactPos; // Point to Artifact
+            else if(this.exit) target = this.exitPos; // Point to Exit
+
+            if(target) {
+                const dx=target.x-this.p.x, dy=target.y-this.p.y;
+                const ang=Math.atan2(dy,dx);
+                ctx.translate(this.p.x, this.p.y); ctx.rotate(ang); ctx.translate(70, 0);
+                ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
+                ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
+                ctx.shadowBlur=0;
+            }
         }
 
         ctx.restore();
@@ -872,6 +898,11 @@ const Game = {
             ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
         }
     }
+};
+
+document.getElementById('start-btn').onclick=()=>{
+    document.getElementById('start-screen').style.display='none';
+    AudioSys.init(); Game.init();
 };
 </script>
 </body>
