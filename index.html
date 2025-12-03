@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v36.0 Enhanced)</title>
+    <title>寻龙诀:绝地求生 (v37.0 Final Perfect)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -130,7 +130,6 @@
         <span id="item-icon">📦</span>
         <h2 id="item-title">物品</h2>
         <p id="item-desc">描述</p>
-        <!-- Button removed for auto-close, or kept for manual -->
         <div style="color:#aaa; font-size:12px; margin-top:20px;">(自动关闭 / Auto Close)</div>
     </div>
 </div>
@@ -163,7 +162,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V36.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V37.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -181,8 +180,8 @@
 
 <script>
 /**
- * TombRaider_Survival v36.0 Enhanced
- * Updates: Coffin Animation, Auto-Close Modal, Map Name in Top-Right.
+ * TombRaider_Survival v37.0 Final Perfect
+ * Fixes: Black Screen (Canvas init), Damage Audio Spam (Debounce), Invulnerability Logic (1.5s)
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -229,7 +228,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V36.0",
+        ver: "绝地求生 V37.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -269,7 +268,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V36.0",
+        ver: "Survival V37.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -536,7 +535,7 @@ class Zombie extends Entity {
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
         const isSprinter = this.zType === 1;
-        if(isSprinter) { ctx.fillStyle = '#ff5252'; ctx.font='12px serif'; ctx.textAlign='center'; ctx.fillText(LANG[curLang].labels.sprinter, 0, -50); }
+        // Removed text label for sprinter
         
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
         ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
@@ -573,7 +572,7 @@ class Trap extends Entity {
         ctx.fillStyle=this.color; ctx.fillRect(-15,-20,30,20); 
         ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-15,-20); ctx.lineTo(-18,0); ctx.lineTo(18,0); ctx.lineTo(15,-20); ctx.fill();
         ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
-        ctx.fillStyle = '#fff'; ctx.font = '12px serif'; ctx.textAlign='center'; 
+        ctx.fillStyle = '#ff5252'; ctx.font = 'bold 12px serif'; ctx.textAlign='center'; 
         ctx.fillText(LANG[curLang].trapNames[this.lvlIdx], 0, -45);
     }
 }
@@ -619,27 +618,38 @@ class Player extends Entity {
     }
     hit(){
         if(this.inv>0 || this.buffs.hoof>0)return;
-        this.hp--; this.inv=1; Game.shake=10; AudioSys.playHurt();
+        this.hp--; this.inv=1.5; Game.shake=10; AudioSys.playHurt();
         Game.updateHUD(); Game.msg(LANG[curLang].msgs.hurt,"#f00");
         if(this.hp<=0)Game.over();
     }
     draw(ctx){
         if(this.inv>0&&Date.now()%100<50)return;
+        
         if(this.buffs.hoof>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fillStyle='rgba(161,136,127,0.3)'; ctx.fill(); }
         if(this.buffs.jade>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=2; ctx.stroke(); }
+
         ctx.rotate(Math.atan2(Input.y,Input.x));
+        
+        // Squash & Stretch
+        let scaleX = 1, scaleY = 1;
+        if(Input.active) { scaleX = 1.1; scaleY = 0.9; }
+        ctx.scale(scaleX, scaleY);
+
         const lOffset = Math.sin(this.stepPhase) * 6;
         ctx.fillStyle='#3e2723'; ctx.fillRect(-8, -5 + lOffset, 6, 12); ctx.fillRect(2, -5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 12);
         
-        // Boots (Visible Color)
+        // Boots
         ctx.fillStyle='#d7ccc8'; 
         ctx.fillRect(-8, 5 + lOffset, 6, 4); 
         ctx.fillRect(2, 5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 4);
         
         ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18); ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
         ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
-        ctx.fillStyle='#ffecb3';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
+        
+        // Held Lamp
         ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(12, 5, 3, 0, 6.28); ctx.fill();
+        
+        ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
     }
 }
 
@@ -721,10 +731,6 @@ const Game = {
         document.getElementById('item-modal').classList.remove('active');
         this.pause = false;
         if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
-        // Auto close visual feedback 
-        setTimeout(() => {
-             // Ensure it's closed if auto timer was needed, but here we rely on button or auto-timer in future
-        }, 2000);
     },
     
     showExitModal: function() {
@@ -887,10 +893,7 @@ const Game = {
     msg: function(t,c){const b=document.getElementById('msg-box');b.innerHTML=t;b.style.color=c;b.classList.add('msg-show');setTimeout(()=>b.classList.remove('msg-show'),2000);},
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
-        // Use map name from array
-        const lName = LANG[curLang].levelNames[Math.min(this.lvl-1,9)];
-        const levelStr = LANG[curLang].level.replace('%s', this.lvl);
-        document.getElementById('level-num').innerText = `${levelStr} | ${lName}`;
+        document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
         document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
