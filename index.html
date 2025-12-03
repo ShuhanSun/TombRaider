@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v23.1 Fix)</title>
+    <title>寻龙诀:绝地求生 (v27.0 Visual Remake)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -53,7 +53,7 @@
         #item-icon { font-size: 80px; margin-bottom: 20px; display: block; animation: floatIcon 3s ease-in-out infinite; }
         #item-title { color: #ffd700; font-size: 32px; margin: 0 0 15px 0; font-family: "Times New Roman", serif; border-bottom: 1px solid #5d4037; padding-bottom: 10px; }
         #item-desc { color: #d7ccc8; font-size: 16px; line-height: 1.6; margin-bottom: 30px; }
-        .btn { padding: 12px 35px; font-size: 20px; background: #3e2723; color: #ffd700; border: 1px solid #8d6e63; cursor: pointer; font-family:serif; pointer-events: auto; user-select: none; }
+        .btn { padding: 12px 35px; font-size: 20px; background: #3e2723; color: #ffd700; border: 1px solid #8d6e63; cursor: pointer; font-family:serif; pointer-events: auto; user-select: none; transition: 0.2s; }
         .btn:active { transform: scale(0.95); }
 
         /* End Screens */
@@ -61,9 +61,24 @@
         #win-title { font-size: 60px; color: #ffd700; font-family: "Times New Roman"; margin-bottom: 20px; text-shadow: 0 0 20px #ff0; }
         
         /* Start Screen */
-        #start-screen { background: #080808; z-index: 100; text-align: center; }
-        h1 { font-size: 56px; margin: 0 0 10px 0; color: #ffd700; text-shadow: 0 0 25px rgba(212, 160, 23, 0.6); font-family: "Times New Roman", serif; letter-spacing: 8px; }
+        #start-screen { background: #080808; z-index: 100; text-align: center; overflow-y: auto; }
+        h1 { font-size: 56px; margin: 20px 0 10px 0; color: #ffd700; text-shadow: 0 0 25px rgba(212, 160, 23, 0.6); font-family: "Times New Roman", serif; letter-spacing: 8px; }
+        .intro-box {
+            text-align: left; background: #1a1a1a; padding: 25px; margin-top:20px; border-radius: 8px; border: 2px solid #3e2723; max-width: 85%; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        .intro-text { 
+            color: #ffca28; text-shadow: 0 0 8px rgba(255, 193, 7, 0.3); font-size: 15px; 
+            line-height: 1.8; margin-bottom: 15px; text-indent: 2em; font-weight: 500;
+        }
+        .footer { margin-top: 30px; color: #555; font-size: 12px; font-family: sans-serif; }
         
+        /* Lang Switch */
+        #lang-switch {
+            position: absolute; top: 20px; right: 20px;
+            color: #888; cursor: pointer; font-size: 16px; border: 1px solid #444; padding: 5px 10px; border-radius: 4px;
+        }
+        #lang-switch:hover { color: #fff; border-color: #777; }
+
         @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes fadeIn { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
     </style>
@@ -76,8 +91,8 @@
         <div id="hp-bar">❤❤❤❤❤</div>
         <div id="level-info">
             <span id="level-num">第 1 层</span>
-            <div style="font-size:14px; margin-top:4px;">机关: <span id="trap-name" style="color:#ff5252">连弩塔</span></div>
-            <div id="artifact-bar">冥器: 0/10</div>
+            <div style="font-size:14px; margin-top:4px;"><span id="trap-label">机关</span>: <span id="trap-name" style="color:#ff5252">连弩塔</span></div>
+            <div id="artifact-bar"><span id="art-label">冥器</span>: 0/10</div>
         </div>
     </div>
     <div id="buff-bar"></div>
@@ -91,50 +106,144 @@
         <span id="item-icon">📦</span>
         <h2 id="item-title">物品</h2>
         <p id="item-desc">描述</p>
-        <button class="btn" onclick="Game.closeModal()">收入囊中</button>
+        <button class="btn" onclick="Game.closeModal()" id="modal-btn-text">收入囊中</button>
     </div>
 </div>
 
 <!-- Game Over Screen -->
 <div id="game-over-modal" class="overlay">
     <h2 id="end-title">胜败乃兵家常事</h2>
-    <p style="color:#ccc; margin-bottom:30px">大侠请重新来过</p>
-    <button class="btn" onclick="Game.restart()">再探古墓</button>
+    <p style="color:#ccc; margin-bottom:30px" id="end-desc">大侠请重新来过</p>
+    <button class="btn" onclick="Game.restart()" id="end-btn">再探古墓</button>
 </div>
 
 <!-- Victory Screen -->
 <div id="victory-modal" class="overlay">
     <h2 id="win-title">摸金校尉 凯旋</h2>
     <div style="font-size:80px; margin-bottom:20px">🏆</div>
-    <p style="color:#ffd700; font-size:20px; margin-bottom:30px">集齐冥器，逃出生天！</p>
-    <button class="btn" onclick="Game.restart()">再来一局</button>
+    <p style="color:#ffd700; font-size:20px; margin-bottom:30px" id="win-desc">找到冥器，逃出生天！</p>
+    <button class="btn" onclick="Game.restart()" id="win-btn">再来一局</button>
 </div>
 
 <!-- Start Screen -->
 <div id="start-screen" class="overlay active">
-    <h1>寻龙诀</h1>
-    <p style="color:#888; letter-spacing: 2px;">V23.1 FIX</p>
-    <!-- High Contrast Info Box -->
-    <div style="text-align: left; background: #1a1a1a; padding: 25px; margin-top:30px; border-radius: 8px; border: 2px solid #3e2723; max-width: 85%; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
-        <p>🧟 <span style="color:#e57373">疾行尸</span>: 极速乱窜，触之伤身</p>
-        <p>🕯️ <span style="color:#ff8a80">红蜡烛</span>: 散落3个，<b>超大视野+罗盘</b></p>
-        <p>🐴 <span style="color:#bcaaa4">黑驴蹄</span>: 僵尸<b>退避15秒</b></p>
-        <p>🥋 <span style="color:#a5d6a7">玉 衣</span>: 机关<b>免疫15秒</b></p>
+    <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
+    <h1 id="game-title">寻龙诀</h1>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V27.0</p>
+    
+    <div class="intro-box">
+        <p class="intro-text" id="intro-p1">
+            传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。
+        </p>
+        <hr style="border-color: #3e2723; margin: 15px 0;">
+        <p id="intro-p2" style="color:#e57373">🧟 <b>疾行尸</b>: 极速乱窜，触之伤身</p>
+        <p id="intro-p3" style="color:#ff8a80">🕯️ <b>红蜡烛</b>: 散落3个，超大视野+罗盘</p>
+        <p id="intro-p4" style="color:#bcaaa4">🐴 <b>黑驴蹄</b>: 僵尸退避15秒</p>
+        <p id="intro-p5" style="color:#a5d6a7">🥋 <b>玉 衣</b>: 机关免疫15秒</p>
     </div>
-    <button class="btn" style="margin-top:40px" onclick="Game.init()">点灯摸金</button>
+    
+    <button class="btn" style="margin-top:30px" onclick="Game.init()" id="start-btn-text">点灯摸金</button>
+    
+    <div class="footer">
+        © 2025 Shuhan Sun. All Rights Reserved.<br>
+        Developed for TombRaider Survival Project.
+    </div>
 </div>
 
 <script>
 /**
- * TombRaider_Survival v23.1 Fix
- * Fixed: Crash on startup due to missing DOM element ID.
- * Updates: Enhanced Candle Buff, Improved Zombie Sprites, Fix Restart Logic
+ * TombRaider_Survival v27.0 Visual Remake
+ * Updates: Horizontal Stone Coffins, No Grid Floor, Brick Walls
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
 const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
 
-// Projectile Types
+// --- Localization ---
+const LANG = {
+    CN: {
+        title: "寻龙诀",
+        ver: "绝地求生 V27.0",
+        p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
+        p2: "🧟 <b>疾行尸</b>: 极速乱窜，触之伤身",
+        p3: "🕯️ <b>红蜡烛</b>: 散落3个，超大视野+罗盘",
+        p4: "🐴 <b>黑驴蹄</b>: 僵尸退避15秒",
+        p5: "🥋 <b>玉 衣</b>: 机关免疫15秒",
+        startBtn: "点灯摸金",
+        level: "第 %s 层",
+        trapLabel: "机关",
+        artLabel: "冥器",
+        modalBtn: "收入囊中",
+        endTitle: "胜败乃兵家常事",
+        endDesc: "大侠请重新来过",
+        endBtn: "再探古墓",
+        winTitle: "摸金校尉 凯旋",
+        winDesc: "找到冥器，逃出生天！",
+        winBtn: "再来一局",
+        items: {
+            candle: {n:"红蜡烛", d:"<b>黄金罗盘</b>: 视野大幅扩大 + 指引盗洞。"},
+            wine: {n:"糯米酒", d:"<b>祛阴补阳</b>: 恢复 1 点生命值。"},
+            hoof: {n:"黑驴蹄子", d:"<b>生人勿近</b>: 僵尸退避 15 秒。"},
+            jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫机关伤害 15 秒。"}
+        },
+        msgs: {
+            start: "进入第 %s 层",
+            hurt: "受到伤害!",
+            empty: "空空如也...",
+            trap: "大凶! 机关触发!",
+            zombie: "起尸了!",
+            compass: "罗盘激活! 视野大开!",
+            heal: "生命恢复!",
+            repel: "尸畏 15秒!",
+            immune: "无视机关 15秒!",
+            hole: "盗洞已开启!"
+        },
+        levels: ["连弩塔","投石机","滚木阵","喷火口","混合阵","飞刀口","巨石阵","鬼火阵","万箭阵","绝 境"]
+    },
+    EN: {
+        title: "Tomb Raider",
+        ver: "Survival V27.0",
+        p1: "Ancient tombs hold countless treasures, guarded by traps and zombies. As a Raider, you must descend 10 levels deep. Danger lurks everywhere. Only by finding the <b>Ancient Artifact</b> can you unlock the exit to the next level and return with glory.",
+        p2: "🧟 <b>Sprinter</b>: Fast & dangerous",
+        p3: "🕯️ <b>Candle</b>: 3 on floor, Vision + Compass",
+        p4: "🐴 <b>Hoof</b>: Repel zombies 15s",
+        p5: "🥋 <b>Jade Suit</b>: Trap immunity 15s",
+        startBtn: "Start Raid",
+        level: "Level %s",
+        trapLabel: "Trap",
+        artLabel: "Relic",
+        modalBtn: "Collect",
+        endTitle: "You Died",
+        endDesc: "Better luck next time.",
+        endBtn: "Try Again",
+        winTitle: "Victory!",
+        winDesc: "Artifacts found. You survived!",
+        winBtn: "Play Again",
+        items: {
+            candle: {n:"Red Candle", d:"<b>Golden Compass</b>: Max Vision + Exit Guide."},
+            wine: {n:"Rice Wine", d:"<b>Vitality</b>: Restore 1 HP."},
+            hoof: {n:"Donkey Hoof", d:"<b>Repel</b>: Zombies fear you for 15s."},
+            jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to traps for 15s."}
+        },
+        msgs: {
+            start: "Entered Level %s",
+            hurt: "Took Damage!",
+            empty: "Empty...",
+            trap: "Trap Triggered!",
+            zombie: "Zombie Rise!",
+            compass: "Compass Active!",
+            heal: "HP Restored!",
+            repel: "Repel 15s!",
+            immune: "Immune 15s!",
+            hole: "Exit Opened!"
+        },
+        levels: ["Crossbow","Catapult","Rolling Log","Flamethrower","Mixed","Knives","Boulders","Ghost Fire","Arrow Rain","Despair"]
+    }
+};
+
+let curLang = 'CN';
+
+// --- Data ---
 const PROJ_TYPES = {
     ARROW: { spd: 350, size: 3, col: '#eee', trail: true },
     STONE: { spd: 180, size: 10, col: '#795548', trail: false },
@@ -142,41 +251,41 @@ const PROJ_TYPES = {
     LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
 };
 
-// Level Themes
-const LEVELS = [
-    { name: "连弩塔", color: "#3e2723", wall: "#2d241e", delay: 1.5, type: 'ARROW' },
-    { name: "投石机", color: "#4e342e", wall: "#352822", delay: 2.0, type: 'STONE' },
-    { name: "滚木阵", color: "#5d4037", wall: "#422e26", delay: 2.5, type: 'LOG' },
-    { name: "喷火口", color: "#263238", wall: "#1b2427", delay: 3.0, type: 'FIRE' },
-    { name: "混合阵", color: "#3e2723", wall: "#2d241e", delay: 1.8, type: 'MIX' },
-    { name: "飞刀口", color: "#455a64", wall: "#314047", delay: 1.2, type: 'ARROW' },
-    { name: "巨石阵", color: "#33691e", wall: "#224715", delay: 4.0, type: 'STONE' },
-    { name: "鬼火阵", color: "#311b92", wall: "#221266", delay: 3.0, type: 'FIRE' },
-    { name: "万箭阵", color: "#212121", wall: "#121212", delay: 1.0, type: 'ARROW' },
-    { name: "绝 境", color: "#fff3e0", wall: "#8d6e63", delay: 2.0, type: 'MIX' }
+const LEVELS_DATA = [
+    { delay: 1.5, type: 'ARROW' },
+    { delay: 2.0, type: 'STONE' },
+    { delay: 2.5, type: 'LOG' },
+    { delay: 3.0, type: 'FIRE' },
+    { delay: 1.8, type: 'MIX' },
+    { delay: 1.2, type: 'ARROW' },
+    { delay: 4.0, type: 'STONE' },
+    { delay: 3.0, type: 'FIRE' },
+    { delay: 1.0, type: 'ARROW' },
+    { delay: 2.0, type: 'MIX' }
+];
+
+// Wall colors for bricks
+const WALL_COLORS = [
+    '#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', 
+    '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'
 ];
 
 const ARTIFACTS = [
-    {n: "战国玉蝉", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。"},
-    {n: "错金铜镜", i: "📀", d: "精美的青铜镜，背面错金工艺繁复。"},
-    {n: "盘龙金印", i: "🧧", d: "王侯之印，盘龙钮栩栩如生。"},
-    {n: "象牙酒杯", i: "🍷", d: "象牙雕刻而成的酒杯，价值连城。"},
-    {n: "水晶头骨", i: "💀", d: "通体透明的水晶头骨，眼神深邃。"},
-    {n: "越王古剑", i: "🗡️", d: "千年不锈，寒光凛凛的绝世名剑。"},
-    {n: "凤头金钗", i: "🥢", d: "宫廷御用金钗，做工极尽奢华。"},
-    {n: "夜明龙珠", i: "🔮", d: "黑暗中发出幽幽绿光的稀世奇珍。"},
-    {n: "传国玉玺", i: "👑", d: "受命于天，既寿永昌。"},
-    {n: "彼岸花",   i: "🌺", d: "通往彼岸的神秘之花，终极宝藏。"}
+    {n: "战国玉蝉", en: "Jade Cicada", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。", end: "Keeps the body from decaying."},
+    {n: "错金铜镜", en: "Gold Mirror", i: "📀", d: "精美的青铜镜，背面错金工艺繁复。", end: "Exquisite bronze craftsmanship."},
+    {n: "盘龙金印", en: "Dragon Seal", i: "🧧", d: "王侯之印，盘龙钮栩栩如生。", end: "Seal of an ancient prince."},
+    {n: "象牙酒杯", en: "Ivory Cup", i: "🍷", d: "象牙雕刻而成的酒杯，价值连城。", end: "Priceless ivory carving."},
+    {n: "水晶头骨", en: "Crystal Skull", i: "💀", d: "通体透明的水晶头骨，眼神深邃。", end: "Mysterious transparent skull."},
+    {n: "越王古剑", en: "King's Sword", i: "🗡️", d: "千年不锈，寒光凛凛的绝世名剑。", end: "Sharp after thousands of years."},
+    {n: "凤头金钗", en: "Phoenix Pin", i: "🥢", d: "宫廷御用金钗，做工极尽奢华。", end: "Luxury from the royal court."},
+    {n: "夜明龙珠", en: "Night Pearl", i: "🔮", d: "黑暗中发出幽幽绿光的稀世奇珍。", end: "Glows in the dark."},
+    {n: "传国玉玺", en: "Imperial Seal", i: "👑", d: "受命于天，既寿永昌。", end: "Symbol of supreme power."},
+    {n: "彼岸花",   en: "Equinox Flower", i: "🌺", d: "通往彼岸的神秘之花，终极宝藏。", end: "The ultimate treasure."}
 ];
 
-const SPECIAL_ITEMS = {
-    'item_candle': { n: "红蜡烛", i: "🕯️", d: "<b>黄金罗盘</b>: 视野大幅扩大 + 指引盗洞。", color: "#ff8a80" },
-    'item_wine':   { n: "糯米酒", i: "🍶", d: "<b>祛阴补阳</b>: 恢复 1 点生命值。", color: "#ffffff" },
-    'item_hoof':   { n: "黑驴蹄子", i: "🐴", d: "<b>生人勿近</b>: 僵尸退避 15 秒。", color: "#bcaaa4" },
-    'item_jade':   { n: "金缕玉衣", i: "🥋", d: "<b>刀枪不入</b>: 免疫机关伤害 15 秒。", color: "#a5d6a7" }
-};
+const SPECIAL_ITEMS = ['item_candle', 'item_wine', 'item_hoof', 'item_jade'];
 
-// --- Audio System ---
+// --- Audio ---
 const AudioSys = {
     ctx: null, gain: null,
     init: function() {
@@ -186,7 +295,6 @@ const AudioSys = {
             this.gain = this.ctx.createGain();
             this.gain.gain.value = 0.5;
             this.gain.connect(this.ctx.destination);
-            
             const d=this.ctx.createDelay(); d.delayTime.value=0.2;
             const dg=this.ctx.createGain(); dg.gain.value=0.2;
             this.gain.connect(d); d.connect(dg); dg.connect(this.ctx.destination);
@@ -206,10 +314,7 @@ const AudioSys = {
         osc.connect(g); g.connect(this.gain);
         osc.start(t); osc.stop(t+dur+0.2);
     },
-    playStep: function() { 
-        if(!this.ctx) return;
-        this.tone(60, 'square', 0.1, 0.15, 30); 
-    },
+    playStep: function() { if(this.ctx) this.tone(60, 'square', 0.1, 0.15, 30); },
     playOpen: function() {
         if(!this.ctx) return;
         const t=this.ctx.currentTime, o=this.ctx.createOscillator(), g=this.ctx.createGain(), f=this.ctx.createBiquadFilter();
@@ -223,16 +328,12 @@ const AudioSys = {
         else this.tone(880, 'sine', 0.1, 0.1);
     },
     playTrap: function(dist) { 
-        const maxDist = 600;
-        if(dist > maxDist) return;
+        const maxDist = 600; if(dist > maxDist) return;
         const vol = Math.max(0, 1 - dist/maxDist) * 0.4;
         this.tone(600, 'sawtooth', 0.2, vol, 200); 
     },
     playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
-    playHurt: function() { 
-        this.tone(120, 'sawtooth', 0.3, 0.5, 80); 
-        setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100);
-    },
+    playHurt: function() { this.tone(120, 'sawtooth', 0.3, 0.5, 80); setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100); },
     playUse: function() { this.tone(400, 'sine', 1.0, 0.2, 800); }
 };
 
@@ -260,7 +361,7 @@ const Input = { x:0, y:0, active:false };
 class Entity { constructor(x,y,t){this.x=x;this.y=y;this.type=t;this.dead=0;} }
 
 class GroundItem extends Entity {
-    constructor(x,y,code) { super(x,y,'ground_item'); this.code=code; this.info=SPECIAL_ITEMS[code]; }
+    constructor(x,y,code) { super(x,y,'ground_item'); this.code=code; }
     update(dt, p) {
         if(Math.hypot(this.x-p.x, this.y-p.y) < 30) {
             Game.getItem(this.code);
@@ -268,11 +369,17 @@ class GroundItem extends Entity {
         }
     }
     draw(ctx) {
+        const iKey = this.code.replace('item_', '');
+        const info = LANG[curLang].items[iKey];
+        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7'};
+        
         const yOff = Math.sin(Date.now()/300)*5;
+        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋'};
+        
         ctx.font = "24px serif"; ctx.textAlign = "center";
-        ctx.fillText(this.info.i, 0, yOff);
-        ctx.shadowBlur=15; ctx.shadowColor=this.info.color;
-        ctx.beginPath(); ctx.arc(0,10,8,0,6.28); ctx.fillStyle=this.info.color; ctx.fill();
+        ctx.fillText(iconMap[iKey], 0, yOff);
+        ctx.shadowBlur=15; ctx.shadowColor=colors[iKey];
+        ctx.beginPath(); ctx.arc(0,10,8,0,6.28); ctx.fillStyle=colors[iKey]; ctx.fill();
         ctx.shadowBlur=0;
     }
 }
@@ -284,18 +391,39 @@ class Coffin extends Entity {
         this.opened = 1; this.shake = 30; AudioSys.playOpen();
         setTimeout(() => {
             if(this.content === 'artifact') Game.getArtifact();
-            else if(this.content === 'zombie') { Game.spawn(new Zombie(this.x,this.y+20, 0)); Game.msg("起尸了!", "#f44336"); AudioSys.playAttack(); }
-            else { Game.msg("空空如也...", "#aaa"); }
+            else if(this.content === 'zombie') { Game.spawn(new Zombie(this.x,this.y+20, 0)); Game.msg(LANG[curLang].msgs.zombie, "#f44336"); AudioSys.playAttack(); }
+            else { Game.msg(LANG[curLang].msgs.empty, "#aaa"); }
         }, 600);
     }
     draw(ctx) {
         if(this.shake>0){ctx.translate((Math.random()-.5)*4,0);this.shake--;}
-        ctx.fillStyle=this.opened?'#3e2723':'#271c19'; ctx.fillRect(-20,-25,40,50);
-        ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.strokeRect(-20,-25,40,50);
+        ctx.save();
+        ctx.rotate(Math.PI/2); // Horizontal
+        
         if(!this.opened){
-            ctx.fillStyle='#ffd700'; ctx.fillRect(-6,-10,12,20);
-            ctx.fillStyle='#b71c1c'; ctx.font='14px serif'; ctx.textAlign="left"; ctx.fillText('敕',-7,5);
-        } else { ctx.fillStyle='#000'; ctx.fillRect(-16,-20,32,40); }
+            // Stone Coffin (Closed)
+            ctx.fillStyle = '#757575'; // Grey stone
+            ctx.beginPath();
+            ctx.moveTo(-18, -35); ctx.lineTo(18, -35); 
+            ctx.lineTo(14, 35); ctx.lineTo(-14, 35);
+            ctx.closePath(); ctx.fill();
+            
+            // Texture details
+            ctx.fillStyle = '#616161';
+            ctx.beginPath(); ctx.arc(0, -20, 5, 0, Math.PI*2); ctx.fill();
+            
+            // Seal
+            ctx.fillStyle='#ffd700'; ctx.fillRect(-5,-10,10,20);
+            ctx.fillStyle='#b71c1c'; ctx.font='12px serif'; ctx.fillText('敕',-6,5);
+        } else {
+            // Stone Coffin (Opened) - No border
+            ctx.fillStyle = '#212121'; // Dark interior
+            ctx.beginPath();
+            ctx.moveTo(-16, -33); ctx.lineTo(16, -33);
+            ctx.lineTo(12, 33); ctx.lineTo(-12, 33);
+            ctx.fill();
+        }
+        ctx.restore();
     }
 }
 
@@ -303,13 +431,11 @@ class Zombie extends Entity {
     constructor(x,y,type=0){super(x,y,'zombie');
         this.zType = type; // 0: Normal, 1: Sprinter
         this.spd = type===1 ? CONFIG.SPRINTER_SPD : CONFIG.ZOMBIE_SPD + Game.lvl*5;
-        this.dir = Math.random()*6.28;
-        this.changeDirT = 0;
+        this.dir = Math.random()*6.28; this.changeDirT = 0;
     }
     update(dt,p) {
         const oldX=this.x, oldY=this.y;
         const dx=p.x-this.x, dy=p.y-this.y, d=Math.hypot(dx,dy);
-        
         let repel = p.buffs.hoof > 0;
         
         if(this.zType === 0) {
@@ -318,28 +444,17 @@ class Zombie extends Entity {
                 let tx=dx, ty=dy, s=this.spd;
                 if(repel && d<350) { tx=-dx; ty=-dy; s=this.spd*1.5; }
                 if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.4;
-                
                 if(!repel || d<350) {
-                    this.x += (tx/d)*s*dt;
-                    if(MapSys.get(this.x, this.y) === TERRAIN.WALL) this.x = oldX; 
-                    this.y += (ty/d)*s*dt;
-                    if(MapSys.get(this.x, this.y) === TERRAIN.WALL) this.y = oldY;
+                    this.x += (tx/d)*s*dt; if(MapSys.get(this.x,this.y)===TERRAIN.WALL) this.x=oldX; 
+                    this.y += (ty/d)*s*dt; if(MapSys.get(this.x,this.y)===TERRAIN.WALL) this.y=oldY;
                 }
             }
-        } 
-        else { // Sprinter
+        } else { 
             this.changeDirT -= dt;
-            if(this.changeDirT <= 0) {
-                this.changeDirT = 1.0 + Math.random();
-                this.dir = Math.random() * 6.28;
-            }
-            let vx = Math.cos(this.dir) * this.spd;
-            let vy = Math.sin(this.dir) * this.spd;
-            
-            this.x += vx * dt;
-            if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.x = oldX; this.dir = Math.PI - this.dir; }
-            this.y += vy * dt;
-            if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.y = oldY; this.dir = -this.dir; }
+            if(this.changeDirT <= 0) { this.changeDirT = 1.0 + Math.random(); this.dir = Math.random() * 6.28; }
+            let vx = Math.cos(this.dir) * this.spd; let vy = Math.sin(this.dir) * this.spd;
+            this.x += vx * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.x = oldX; this.dir = Math.PI - this.dir; }
+            this.y += vy * dt; if(MapSys.get(this.x, this.y) === TERRAIN.WALL) { this.y = oldY; this.dir = -this.dir; }
         }
         
         if(!repel && d<20) { p.hit(); AudioSys.playAttack(); }
@@ -348,30 +463,13 @@ class Zombie extends Entity {
     draw(ctx){
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
-        
         const isSprinter = this.zType === 1;
-        
-        // Official Hat
-        ctx.fillStyle = '#000';
-        ctx.fillRect(-10,-42,20,5); // Rim
-        ctx.fillRect(-6,-48,12,6);  // Top
-        ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; 
-        ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill(); // Knob
-
-        // Robe
-        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; 
-        ctx.fillRect(-12,-25,24,25);
-        
-        // Head
-        ctx.fillStyle='#e0e0e0'; ctx.beginPath(); ctx.arc(0,-30,9,0,6.28); ctx.fill();
-        
-        // Arms (Reaching out)
-        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; 
-        ctx.fillRect(-14, -28, 6, 20); // L
-        ctx.fillRect(8, -28, 6, 20);  // R
-        
-        // Tag
-        ctx.fillStyle='#ffea00'; ctx.fillRect(-3,-38,6,12);
+        ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
+        ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
+        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; ctx.fillRect(-12,-25,24,25); // Robe
+        ctx.fillStyle='#e0e0e0'; ctx.beginPath(); ctx.arc(0,-30,9,0,6.28); ctx.fill(); // Head
+        ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; ctx.fillRect(-14, -28, 6, 20); ctx.fillRect(8, -28, 6, 20); // Arms
+        ctx.fillStyle='#ffea00'; ctx.fillRect(-3,-38,6,12); // Tag
     }
 }
 
@@ -390,96 +488,64 @@ class Trap extends Entity {
     draw(ctx){
         ctx.fillStyle='#424242'; ctx.fillRect(-12,-20,24,20);
         ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-12,-20); ctx.lineTo(-15,0); ctx.lineTo(15,0); ctx.lineTo(12,-20); ctx.fill();
-        ctx.fillStyle='#f44336'; 
-        const pulse = 3 + Math.sin(Date.now()/100)*2;
-        ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
+        ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
     }
 }
 
 class Projectile extends Entity {
     constructor(x,y,a,type){super(x,y,'proj');
         this.info = PROJ_TYPES[type] || PROJ_TYPES.ARROW;
-        this.vx=Math.cos(a)*this.info.spd;
-        this.vy=Math.sin(a)*this.info.spd;
+        this.vx=Math.cos(a)*this.info.spd; this.vy=Math.sin(a)*this.info.spd;
         this.life=3.0; this.ang=a;
     }
     update(dt,p){
         this.life-=dt; if(this.life<0)this.dead=1;
         this.x+=this.vx*dt; this.y+=this.vy*dt;
         if(Math.hypot(this.x-p.x,this.y-p.y)<this.info.size+10){
-            if(p.buffs.jade > 0) {
-                // Absorbed
-                this.dead = 1;
-            } else {
-                p.hit(); 
-                this.dead=1;
-            }
+            if(p.buffs.jade > 0) this.dead = 1; else { p.hit(); this.dead=1; }
         }
         if(MapSys.get(this.x,this.y)===TERRAIN.WALL) this.dead=1;
     }
     draw(ctx){
-        ctx.rotate(this.ang);
-        ctx.fillStyle=this.info.col;
+        ctx.rotate(this.ang); ctx.fillStyle=this.info.col;
         if(this.info.shape === 'rect') { ctx.fillRect(-10, -5, 20, 10); } 
         else { ctx.beginPath(); ctx.arc(0,0,this.info.size,0,6.28); ctx.fill(); }
-        if(this.info.trail) {
-            ctx.strokeStyle=this.info.col; ctx.globalAlpha=0.5;
-            ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(-20,0); ctx.stroke();
-            ctx.globalAlpha=1;
-        }
+        if(this.info.trail) { ctx.strokeStyle=this.info.col; ctx.globalAlpha=0.5; ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(-20,0); ctx.stroke(); ctx.globalAlpha=1; }
     }
 }
 
 class Player extends Entity {
-    constructor(x,y){super(x,y,'player');this.hp=5;this.sight=CONFIG.BASE_SIGHT;this.inv=0;this.buffs={hoof:0,candle:0,jade:0};this.walkT=0;this.hasCompass=0;}
+    constructor(x,y){super(x,y,'player');this.hp=5;this.sight=CONFIG.BASE_SIGHT;this.inv=0;this.buffs={hoof:0,candle:0,jade:0};this.walkT=0;this.hasCompass=0;this.stepPhase=0;}
     update(dt){
         if(this.inv>0)this.inv-=dt;
         if(this.buffs.hoof>0) this.buffs.hoof-=dt;
         if(this.buffs.candle>0) this.buffs.candle-=dt;
         if(this.buffs.jade>0) this.buffs.jade-=dt;
         
-        let s=180;
-        if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
-        
+        let s=180; if(MapSys.get(this.x,this.y)===TERRAIN.WATER) s*=0.5;
         if(Input.active){
             const nx=this.x+Input.x*s*dt, ny=this.y+Input.y*s*dt;
             if(MapSys.get(nx,this.y)!==TERRAIN.WALL)this.x=nx;
             if(MapSys.get(this.x,ny)!==TERRAIN.WALL)this.y=ny;
-            
-            this.walkT+=dt;
-            if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
-        }
+            this.stepPhase += dt * 10;
+            this.walkT+=dt; if(this.walkT > 0.4) { AudioSys.playStep(); this.walkT=0; }
+        } else { this.stepPhase = 0; }
     }
     hit(){
         if(this.inv>0 || this.buffs.hoof>0)return;
         this.hp--; this.inv=1; Game.shake=10; AudioSys.playHurt();
-        Game.updateHUD(); Game.msg("受到伤害!","#f00");
+        Game.updateHUD(); Game.msg(LANG[curLang].msgs.hurt,"#f00");
         if(this.hp<=0)Game.over();
     }
     draw(ctx){
         if(this.inv>0&&Date.now()%100<50)return;
-        
         if(this.buffs.hoof>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fillStyle='rgba(161,136,127,0.3)'; ctx.fill(); }
         if(this.buffs.jade>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=2; ctx.stroke(); }
-
         ctx.rotate(Math.atan2(Input.y,Input.x));
-        
-        // Walk Anim
-        if(Input.active) {
-            const w = Math.sin(Date.now()/100)*4;
-            ctx.fillStyle='#3e2723'; 
-            ctx.fillRect(-8,-5+w,6,12); 
-            ctx.fillRect(2,-5-w,6,12);
-        }
-        
-        // Body (Backpack)
-        ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18);
-        ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
-        
-        // Head
+        const lOffset = Math.sin(this.stepPhase) * 6;
+        ctx.fillStyle='#3e2723'; ctx.fillRect(-8, -5 + lOffset, 6, 12); ctx.fillRect(2, -5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 12);
+        ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18); ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
         ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
-        
-        // Flashlight
         ctx.fillStyle='#ffecb3';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
     }
 }
@@ -503,12 +569,8 @@ const MapSys = {
                 }
             }
         }
-        
         const last = rms[rms.length-1];
-        for(let Y=last.y; Y<last.y+last.h; Y++)
-            for(let X=last.x; X<last.x+last.w; X++)
-                this.t[Y*this.w+X] = 2;
-
+        for(let Y=last.y; Y<last.y+last.h; Y++) for(let X=last.x; X<last.x+last.w; X++) this.t[Y*this.w+X] = 2;
         return rms;
     },
     get: function(px,py){
@@ -523,6 +585,32 @@ const Game = {
     cvs:document.getElementById('gameCanvas'), ctx:document.getElementById('gameCanvas').getContext('2d'),
     ents:[], lvl:1, art:0, exit:0, pause:0, shake:0, running:0,
     
+    toggleLang: function() {
+        curLang = curLang === 'CN' ? 'EN' : 'CN';
+        this.updateUI();
+    },
+    
+    updateUI: function() {
+        const txt = LANG[curLang];
+        document.getElementById('game-title').innerText = txt.title;
+        document.getElementById('game-ver').innerText = txt.ver;
+        document.getElementById('intro-p1').innerHTML = txt.p1;
+        document.getElementById('intro-p2').innerHTML = txt.p2;
+        document.getElementById('intro-p3').innerHTML = txt.p3;
+        document.getElementById('intro-p4').innerHTML = txt.p4;
+        document.getElementById('intro-p5').innerHTML = txt.p5;
+        document.getElementById('start-btn-text').innerText = txt.startBtn;
+        document.getElementById('trap-label').innerText = txt.trapLabel;
+        document.getElementById('art-label').innerText = txt.artLabel;
+        document.getElementById('modal-btn-text').innerText = txt.modalBtn;
+        document.getElementById('end-title').innerText = txt.endTitle;
+        document.getElementById('end-desc').innerText = txt.endDesc;
+        document.getElementById('end-btn').innerText = txt.endBtn;
+        document.getElementById('win-title').innerText = txt.winTitle;
+        document.getElementById('win-desc').innerText = txt.winDesc;
+        document.getElementById('win-btn').innerText = txt.winBtn;
+    },
+
     init: function(){
         this.resize(); window.onresize=()=>this.resize();
         document.getElementById('start-screen').style.display='none';
@@ -559,7 +647,6 @@ const Game = {
              corners.push({x:(r.x+r.w)*CONFIG.TILE-25, y:(r.y+r.h)*CONFIG.TILE-25});
         });
         
-        // 3 Candles, 1 Wine, 1 Hoof, 1 Jade
         ['item_wine', 'item_hoof', 'item_jade', 'item_candle', 'item_candle', 'item_candle'].forEach(code => {
              if(corners.length>0) {
                  const ri = Math.floor(Math.random()*corners.length);
@@ -582,8 +669,9 @@ const Game = {
              this.ents.push(new Coffin(p.x, p.y, c));
         });
         
-        const lData = LEVELS[Math.min(l-1, 9)];
-        for(let i=0; i<5 + l; i++) {
+        const trapCount = Math.floor(1 + Math.pow(l, 1.2)); 
+        const lData = LEVELS_DATA[Math.min(l-1, 9)];
+        for(let i=0; i<trapCount; i++) {
              const r=rms[Math.floor(Math.random()*rms.length)];
              let tType = lData.type;
              if(tType === 'MIX') {
@@ -600,7 +688,7 @@ const Game = {
             const isSprinter = Math.random() < 0.2 ? 1 : 0;
             this.ents.push(new Zombie((r.x+2)*CONFIG.TILE, (r.y+2)*CONFIG.TILE, isSprinter));
         }
-        this.updateHUD(); this.msg(`进入第 ${l} 层`, '#fff');
+        this.updateHUD(); this.msg(LANG[curLang].msgs.start.replace('%s', l), '#fff');
     },
     
     showModal: function(t,i,d,c) {
@@ -611,24 +699,27 @@ const Game = {
     
     getArtifact: function() {
         AudioSys.playItem(true);
-        const a=ARTIFACTS[this.lvl-1];
-        this.showModal(a.n,a.i,a.d+`\n(收集: ${this.lvl}/10)`);
-        this.pendingEffect = ()=>{this.art++; this.exit=1; this.msg("盗洞已开启!", "#0f0"); this.updateHUD();};
+        const a = ARTIFACTS[this.lvl-1];
+        const name = curLang === 'CN' ? a.n : a.en;
+        const desc = curLang === 'CN' ? a.d : a.end;
+        this.showModal(name, a.i, desc);
+        this.pendingEffect = ()=>{this.art++; this.exit=1; this.msg(LANG[curLang].msgs.hole, "#0f0"); this.updateHUD();};
     },
     getItem: function(c) {
         AudioSys.playItem(true);
-        const i=SPECIAL_ITEMS[c];
-        this.showModal(i.n,i.i,i.d,i.color);
+        const key = c.replace('item_','');
+        const item = LANG[curLang].items[key];
+        const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7'};
+        const col = colors[key];
+        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋'};
+        
+        this.showModal(item.n, iconMap[key], item.d, col);
         this.pendingEffect = ()=>{
             AudioSys.playUse();
-            if(c==='item_candle'){
-                this.p.sight+=150; // Increased
-                this.p.hasCompass=1; 
-                this.msg("罗盘激活! 视野大开!",i.color);
-            }
-            if(c==='item_wine'){this.p.hp=Math.min(5,this.p.hp+1); this.msg("生命恢复!",i.color); this.updateHUD();}
-            if(c==='item_hoof'){this.p.buffs.hoof=15; this.msg("尸畏 15秒!",i.color);}
-            if(c==='item_jade'){this.p.buffs.jade=15; this.msg("无视机关 15秒!",i.color);}
+            if(c==='item_candle'){ this.p.sight+=150; this.p.hasCompass=1; this.msg(LANG[curLang].msgs.compass, col); }
+            if(c==='item_wine'){ this.p.hp=Math.min(5,this.p.hp+1); this.msg(LANG[curLang].msgs.heal, col); this.updateHUD(); }
+            if(c==='item_hoof'){ this.p.buffs.hoof=15; this.msg(LANG[curLang].msgs.repel, col); }
+            if(c==='item_jade'){ this.p.buffs.jade=15; this.msg(LANG[curLang].msgs.immune, col); }
         };
     },
     
@@ -636,9 +727,9 @@ const Game = {
     msg: function(t,c){const b=document.getElementById('msg-box');b.innerHTML=t;b.style.color=c;b.classList.add('msg-show');setTimeout(()=>b.classList.remove('msg-show'),2000);},
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
-        document.getElementById('level-num').innerText=`第 ${this.lvl} 层`;
-        document.getElementById('trap-name').innerText=LEVELS[Math.min(this.lvl-1,9)].name;
-        document.getElementById('artifact-bar').innerText=`冥器: ${this.art}/10`;
+        document.getElementById('level-num').innerText = LANG[curLang].level.replace('%s', this.lvl);
+        document.getElementById('trap-name').innerText = LANG[curLang].levels[Math.min(this.lvl-1,9)];
+        document.getElementById('artifact-bar').innerText = `${LANG[curLang].artLabel}: ${this.art}/10`;
     },
     over: function(){
         this.running=0;
@@ -656,9 +747,9 @@ const Game = {
         if(this.shake>0)this.shake*=.9;
         
         const bb = document.getElementById('buff-bar'); bb.innerHTML='';
-        if(this.p.buffs.hoof>0) bb.innerHTML+=`<div class="buff buff-hoof">🐴 尸畏: ${Math.ceil(this.p.buffs.hoof)}s</div>`;
-        if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 玉衣: ${Math.ceil(this.p.buffs.jade)}s</div>`;
-        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-candle">🕯️ 罗盘激活</div>`;
+        if(this.p.buffs.hoof>0) bb.innerHTML+=`<div class="buff buff-hoof">🐴 ${Math.ceil(this.p.buffs.hoof)}s</div>`;
+        if(this.p.buffs.jade>0) bb.innerHTML+=`<div class="buff buff-jade">🥋 ${Math.ceil(this.p.buffs.jade)}s</div>`;
+        if(this.p.hasCompass) bb.innerHTML+=`<div class="buff buff-candle">🕯️ ON</div>`;
         
         const dt=0.016;
         this.ents = this.ents.filter(e=>!e.dead);
@@ -688,7 +779,8 @@ const Game = {
         
         const cs=Math.floor(cx/CONFIG.TILE), ce=cs+w/CONFIG.TILE+2;
         const rs=Math.floor(cy/CONFIG.TILE), re=rs+h/CONFIG.TILE+2;
-        const ldata=LEVELS[Math.min(this.lvl-1,9)];
+        const ldata=LEVELS_DATA[Math.min(this.lvl-1,9)];
+        const wallCol = WALL_COLORS[Math.min(this.lvl-1,9)];
         const now = Date.now();
         
         for(let y=rs;y<re;y++)for(let x=cs;x<ce;x++){
@@ -696,36 +788,43 @@ const Game = {
                 const t = MapSys.t[y*MapSys.w+x];
                 const px=x*CONFIG.TILE, py=y*CONFIG.TILE;
                 
-                if(t==0){ // Floor (Bricks)
+                if(t==0){ // Floor (No Grid)
                     ctx.fillStyle='#2d241e'; ctx.fillRect(px,py,50,50);
-                    ctx.strokeStyle='#3e2723'; ctx.lineWidth=2;
-                    ctx.strokeRect(px,py,50,25); ctx.strokeRect(px,py+25,50,25); 
-                    if(y%2==0) { ctx.beginPath(); ctx.moveTo(px+25, py); ctx.lineTo(px+25, py+25); ctx.stroke(); }
-                    else { ctx.beginPath(); ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50); ctx.stroke(); }
+                    // Minimal noise texture
+                    ctx.fillStyle='rgba(0,0,0,0.1)';
+                    if((x+y)%5===0) ctx.fillRect(px+10,py+10,5,5);
                 } 
                 else if(t==2) { // Water
                     ctx.fillStyle='#01579b';ctx.fillRect(px,py,50,50);
                     ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
-                    ctx.beginPath();
-                    const off = Math.sin(now/400 + x/2)*10;
-                    ctx.moveTo(px, py+25+off); ctx.lineTo(px+50, py+25-off);
-                    ctx.stroke();
+                    ctx.beginPath(); const off = Math.sin(now/400 + x/2)*10;
+                    ctx.moveTo(px, py+25+off); ctx.lineTo(px+50, py+25-off); ctx.stroke();
                 }
-                else { // Wall (Stone Noise)
-                    ctx.fillStyle='#1b1b1b'; ctx.fillRect(px,py,50,50);
-                    ctx.fillStyle='rgba(255,255,255,0.05)';
-                    const seed = (x*y*123)%7;
-                    if(seed<3) ctx.fillRect(px+10,py+10,30,10);
-                    if(seed>4) ctx.fillRect(px+5,py+30,20,15);
+                else { // Wall (Brick Pattern)
+                    ctx.fillStyle = wallCol; ctx.fillRect(px, py, 50, 50);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    // Horizontal lines
+                    ctx.moveTo(px, py); ctx.lineTo(px+50, py);
+                    ctx.moveTo(px, py+25); ctx.lineTo(px+50, py+25);
+                    ctx.moveTo(px, py+50); ctx.lineTo(px+50, py+50);
+                    // Vertical lines (staggered)
+                    ctx.moveTo(px, py); ctx.lineTo(px, py+25);
+                    ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50);
+                    ctx.moveTo(px+50, py); ctx.lineTo(px+50, py+25);
+                    ctx.stroke();
                 }
             }
         }
         
         if(this.exit) {
             ctx.save(); ctx.translate(this.exitPos.x, this.exitPos.y);
-            ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,25,0,6.28);ctx.fill();
-            ctx.strokeStyle='#fff';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(0,0,25,0,6.28);ctx.stroke();
-            ctx.fillStyle='#ffd700';ctx.font='20px serif';ctx.textAlign='center';ctx.fillText("⬇",0,5);
+            ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,30,0,6.28);ctx.fill();
+            ctx.strokeStyle='#795548'; ctx.lineWidth=4;
+            ctx.beginPath(); ctx.moveTo(-12,-30); ctx.lineTo(-12,30); ctx.moveTo(12,-30); ctx.lineTo(12,30);
+            for(let i=-2; i<=2; i++) { ctx.moveTo(-12, i*12); ctx.lineTo(12, i*12); } 
+            ctx.stroke();
+            ctx.fillStyle='#ffd700';ctx.font='20px serif';ctx.textAlign='center';ctx.fillText("⬇",0,0);
             ctx.restore();
         }
 
@@ -735,14 +834,10 @@ const Game = {
             ctx.restore();
         });
         
-        // Compass Arrow
         if(this.exit && this.p.hasCompass) {
             const dx=this.exitPos.x-this.p.x, dy=this.exitPos.y-this.p.y;
             const ang=Math.atan2(dy,dx);
-            const dist=70;
-            ctx.translate(this.p.x, this.p.y);
-            ctx.rotate(ang);
-            ctx.translate(dist, 0);
+            ctx.translate(this.p.x, this.p.y); ctx.rotate(ang); ctx.translate(70, 0);
             ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
             ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
             ctx.shadowBlur=0;
@@ -750,19 +845,12 @@ const Game = {
 
         ctx.restore();
         
-        // Lighting
         if(this.p.buffs.candle <= 0) {
             const g=ctx.createRadialGradient(w/2,h/2,30,w/2,h/2,this.p.sight);
-            g.addColorStop(0,'rgba(0,0,0,0)');
-            g.addColorStop(1,'rgba(0,0,0,0.98)');
+            g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.98)');
             ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
         }
     }
-};
-
-document.getElementById('start-btn').onclick=()=>{
-    document.getElementById('start-screen').style.display='none';
-    AudioSys.init(); Game.init();
 };
 </script>
 </body>
