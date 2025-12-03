@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v30.0 Final Complete)</title>
+    <title>寻龙诀:绝地求生 (v32.1 Immersive Fix)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -104,7 +104,7 @@
         <div id="hp-bar">❤❤❤❤❤</div>
         <div id="level-info">
             <span id="level-num">第 1 层</span>
-            <!-- Removed trap-name here, now on entity/splash -->
+            <div style="font-size:14px; margin-top:4px;"><span id="trap-label">机关</span>: <span id="trap-name" style="color:#ff5252">连弩塔</span></div>
             <div id="artifact-bar"><span id="art-label">冥器</span>: 0/10</div>
         </div>
     </div>
@@ -121,6 +121,17 @@
         <h2 id="item-title">物品</h2>
         <p id="item-desc">描述</p>
         <button class="btn" onclick="Game.closeModal()" id="modal-btn-text">收入囊中</button>
+    </div>
+</div>
+
+<!-- Exit Confirm Modal -->
+<div id="exit-modal" class="overlay">
+    <div id="item-card">
+        <span id="item-icon">🕳️</span>
+        <h2 id="exit-title" style="color:#ffd700">发现盗洞</h2>
+        <p id="exit-desc" style="color:#ccc">是否进入下一层？<br>(进入后无法返回)</p>
+        <button class="btn" onclick="Game.confirmNextLevel()" style="margin-top:10px">进入下一层</button>
+        <button class="btn" onclick="Game.cancelExit()" style="margin-top:10px; background:#555; border-color:#777">暂不进入</button>
     </div>
 </div>
 
@@ -143,17 +154,12 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V30.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V32.1</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
             传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。
         </p>
-        <hr style="border-color: #3e2723; margin: 15px 0;">
-        <p id="intro-p2" style="color:#e57373">🧟 <b>疾行尸</b>: 极速乱窜，触之伤身</p>
-        <p id="intro-p3" style="color:#ff8a80">🕯️ <b>蜡烛</b>: 散落3个，超大视野</p>
-        <p id="intro-p4" style="color:#ffd700">🧭 <b>罗盘</b>: 寻金定穴，指引方向</p>
-        <p id="intro-p5" style="color:#a5d6a7">🥋 <b>玉 衣</b>: 机关免疫15秒</p>
     </div>
     
     <button class="btn" style="margin-top:30px" onclick="Game.init()" id="start-btn-text">点灯摸金</button>
@@ -166,39 +172,28 @@
 
 <script>
 /**
- * TombRaider_Survival v30.0 Final Complete
- * Updates: New Level Names, Coffin Text Prompts, Fixed Trap Auto-Attack.
+ * TombRaider_Survival v32.1 Immersive Fix
+ * Updates: Dynamic Water Flood, Zombie Burst FX, Gold Flash FX, Player Wobble.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
 const TERRAIN = { FLOOR: 0, WALL: 1, WATER: 2 };
 
-const LEVEL_NAMES_CN = [
-    "沙海迷冢", "千纹机关廊", "青铜兽影厅", "巨鼎炼魂室", "石骨迷宫",
-    "荧光棺河", "九字封印井", "暗影葬主殿", "帝王沉眠室", "永劫天陨塔"
-];
-const LEVEL_NAMES_EN = [
-    "Sand Sea Tomb", "Thousand Traps", "Bronze Beast Hall", "Cauldron Chamber", "Bone Labyrinth",
-    "Fluorescent River", "Nine Seal Well", "Shadow Burial", "Emperor's Sleep", "Eternal Fall Tower"
-];
+const LEVEL_NAMES_CN = ["沙海迷冢", "千纹机关廊", "青铜兽影厅", "巨鼎炼魂室", "石骨迷宫", "荧光棺河", "九字封印井", "暗影葬主殿", "帝王沉眠室", "永劫天陨塔"];
+const LEVEL_NAMES_EN = ["Sand Sea Tomb", "Thousand Traps", "Bronze Beast Hall", "Cauldron Chamber", "Bone Labyrinth", "Fluorescent River", "Nine Seal Well", "Shadow Burial", "Emperor's Sleep", "Eternal Fall Tower"];
+
+const TRAP_NAMES_CN = ["连弩塔", "投石机", "滚木阵", "喷火口", "混合阵", "飞刀口", "巨石阵", "鬼火阵", "万箭阵", "绝境塔"];
+const TRAP_NAMES_EN = ["Crossbow", "Catapult", "Log Trap", "Flamer", "Mix Trap", "Knives", "Boulders", "Ghost Fire", "Arrow Rain", "Despair Tower"];
 
 const LEVELS_DATA = [
-    { delay: 1.5, type: 'ARROW', col: '#5d4037' },
-    { delay: 2.0, type: 'STONE', col: '#4e342e' },
-    { delay: 2.5, type: 'LOG', col: '#3e2723' },
-    { delay: 3.0, type: 'FIRE', col: '#bf360c' },
-    { delay: 1.8, type: 'MIX', col: '#263238' },
-    { delay: 1.2, type: 'ARROW', col: '#455a64' },
-    { delay: 4.0, type: 'STONE', col: '#33691e' },
-    { delay: 3.0, type: 'FIRE', col: '#311b92' },
-    { delay: 1.0, type: 'ARROW', col: '#212121' },
-    { delay: 2.0, type: 'MIX', col: '#b71c1c' }
+    { delay: 1.5, type: 'ARROW', col: '#5d4037' }, { delay: 2.0, type: 'STONE', col: '#4e342e' },
+    { delay: 2.5, type: 'LOG', col: '#3e2723' }, { delay: 3.0, type: 'FIRE', col: '#bf360c' },
+    { delay: 1.8, type: 'MIX', col: '#263238' }, { delay: 1.2, type: 'ARROW', col: '#455a64' },
+    { delay: 4.0, type: 'STONE', col: '#33691e' }, { delay: 3.0, type: 'FIRE', col: '#311b92' },
+    { delay: 1.0, type: 'ARROW', col: '#212121' }, { delay: 2.0, type: 'MIX', col: '#b71c1c' }
 ];
 
-const WALL_COLORS = [
-    '#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', 
-    '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'
-];
+const WALL_COLORS = ['#4e342e', '#3e2723', '#263238', '#1b1b1b', '#37474f', '#212121', '#1a237e', '#b71c1c', '#004d40', '#000000'];
 
 const ARTIFACTS = [
     {n: "战国玉蝉", en: "Jade Cicada", i: "🪲", d: "玉质温润，含于口中可保尸身不腐。", end: "Keeps the body from decaying."},
@@ -214,19 +209,22 @@ const ARTIFACTS = [
 ];
 
 const SPECIAL_ITEMS = ['item_candle', 'item_wine', 'item_hoof', 'item_jade', 'item_compass'];
+const PROJ_TYPES = {
+    ARROW: { spd: 350, size: 3, col: '#eee', trail: true },
+    STONE: { spd: 180, size: 10, col: '#795548', trail: false },
+    FIRE: { spd: 220, size: 6, col: '#ff5722', trail: true },
+    LOG: { spd: 150, size: 15, col: '#5d4037', trail: false, shape: 'rect' }
+};
 
 // --- Localization ---
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V30.0",
+        ver: "绝地求生 V32.1",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
-        p2: "🧟 <b>疾行尸</b>: 极速乱窜，触之伤身",
-        p3: "🕯️ <b>蜡烛</b>: 散落3个，超大视野",
-        p4: "🐴 <b>黑驴蹄</b>: 僵尸退避15秒",
-        p5: "🥋 <b>玉 衣</b>: 机关免疫15秒 | 🧭 <b>罗盘</b>: 寻金定穴",
         startBtn: "点灯摸金",
         level: "第 %s 层",
+        trapLabel: "机关",
         artLabel: "冥器",
         modalBtn: "收入囊中",
         endTitle: "胜败乃兵家常事",
@@ -236,7 +234,7 @@ const LANG = {
         winDesc: "找到冥器，逃出生天！",
         winBtn: "再来一局",
         items: {
-            candle: {n:"蜡烛", d:"<b>光照四方</b>: 视野大幅扩大。"},
+            candle: {n:"千年油灯", d:"<b>长明不灭</b>: 视野大幅扩大。"},
             wine: {n:"糯米酒", d:"<b>祛阴补阳</b>: 恢复 1 点生命值。"},
             hoof: {n:"黑驴蹄子", d:"<b>生人勿近</b>: 僵尸退避 15 秒。"},
             jade: {n:"金缕玉衣", d:"<b>刀枪不入</b>: 免疫机关伤害 15 秒。"},
@@ -248,25 +246,25 @@ const LANG = {
             empty: "空空如也...",
             trap: "大凶! 机关触发!",
             zombie: "起尸了!",
-            candle: "视野扩大!",
+            candle: "灯火通明!",
             compass: "罗盘在手! 寻龙分金!",
             heal: "生命恢复!",
             repel: "尸畏 15秒!",
             immune: "无视机关 15秒!",
-            hole: "盗洞已开启!"
+            hole: "盗洞已开启! 水脉逆流!"
         },
-        levelNames: LEVEL_NAMES_CN
+        levelNames: LEVEL_NAMES_CN,
+        trapNames: TRAP_NAMES_CN,
+        labels: { coffin: "石棺", exit: "盗洞", sprinter: "疾行尸" },
+        exitModal: { t: "发现盗洞", d: "是否进入下一层？<br>(进入后无法返回)", yes: "进入下一层", no: "暂不进入" }
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V30.0",
+        ver: "Survival V32.1",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
-        p2: "🧟 <b>Sprinter</b>: Fast & dangerous",
-        p3: "🕯️ <b>Candle</b>: Max Vision",
-        p4: "🐴 <b>Hoof</b>: Repel zombies 15s",
-        p5: "🥋 <b>Jade Suit</b>: Immune 15s | 🧭 <b>Compass</b>: Find Artifact/Exit",
         startBtn: "Start Raid",
         level: "Level %s",
+        trapLabel: "Trap",
         artLabel: "Relic",
         modalBtn: "Collect",
         endTitle: "You Died",
@@ -276,7 +274,7 @@ const LANG = {
         winDesc: "Artifacts found. You survived!",
         winBtn: "Play Again",
         items: {
-            candle: {n:"Candle", d:"<b>Bright Light</b>: Max Vision Range."},
+            candle: {n:"Ancient Lamp", d:"<b>Eternal Flame</b>: Max Vision Range."},
             wine: {n:"Rice Wine", d:"<b>Vitality</b>: Restore 1 HP."},
             hoof: {n:"Donkey Hoof", d:"<b>Repel</b>: Zombies fear you for 15s."},
             jade: {n:"Jade Suit", d:"<b>Invincible</b>: Immune to traps for 15s."},
@@ -288,14 +286,17 @@ const LANG = {
             empty: "Empty...",
             trap: "Trap Triggered!",
             zombie: "Zombie Rise!",
-            candle: "Vision Up!",
+            candle: "Lamp Lit!",
             compass: "Compass Active!",
             heal: "HP Restored!",
             repel: "Repel 15s!",
             immune: "Immune 15s!",
-            hole: "Exit Opened!"
+            hole: "Exit Opened! Water Rising!"
         },
-        levelNames: LEVEL_NAMES_EN
+        levelNames: LEVEL_NAMES_EN,
+        trapNames: TRAP_NAMES_EN,
+        labels: { coffin: "Coffin", exit: "Exit", sprinter: "Sprinter" },
+        exitModal: { t: "Exit Found", d: "Enter next level?<br>(No return)", yes: "Enter", no: "Stay" }
     }
 };
 
@@ -382,6 +383,24 @@ class FloatText {
     }
 }
 
+class Effect {
+    constructor(x,y,type){this.x=x;this.y=y;this.type=type;this.life=1.0;}
+    update(dt){this.life-=dt*2; if(this.life<0)this.dead=1;}
+    draw(ctx){
+        ctx.save(); ctx.translate(this.x,this.y);
+        ctx.globalAlpha=this.life;
+        if(this.type==='gold') { // Gold Shine
+            ctx.strokeStyle='#ffd700'; ctx.lineWidth=2;
+            for(let i=0;i<8;i++){
+                ctx.rotate(0.785); ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(30+Math.random()*10,0); ctx.stroke();
+            }
+        } else if(this.type==='burst') { // Zombie Burst
+            ctx.fillStyle='#b71c1c'; ctx.beginPath(); ctx.arc(0,0,(1-this.life)*50,0,6.28); ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
 // --- Entities ---
 class Entity { constructor(x,y,t){this.x=x;this.y=y;this.type=t;this.dead=0;} }
 
@@ -397,9 +416,12 @@ class GroundItem extends Entity {
         const iKey = this.code.replace('item_', '');
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const yOff = Math.sin(Date.now()/300)*5;
-        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
+        const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         ctx.font = "24px serif"; ctx.textAlign = "center";
         ctx.fillText(iconMap[iKey], 0, yOff);
+        ctx.fillStyle = '#fff'; ctx.font = "12px serif";
+        ctx.fillText(LANG[curLang].items[iKey].n, 0, yOff - 20); 
+        
         ctx.shadowBlur=15; ctx.shadowColor=colors[iKey];
         ctx.beginPath(); ctx.arc(0,10,8,0,6.28); ctx.fillStyle=colors[iKey]; ctx.fill();
         ctx.shadowBlur=0;
@@ -415,10 +437,12 @@ class Coffin extends Entity {
             if(this.content === 'artifact') {
                 Game.getArtifact();
                 Game.addText(this.x, this.y, ARTIFACTS[Game.lvl-1][curLang==='CN'?'n':'en'], '#ffd700');
+                Game.spawn(new Effect(this.x,this.y,'gold'));
             }
             else if(this.content === 'zombie') { 
                 Game.spawn(new Zombie(this.x,this.y+20, 0)); 
                 Game.addText(this.x, this.y, LANG[curLang].msgs.zombie, '#f44336');
+                Game.spawn(new Effect(this.x,this.y,'burst'));
                 AudioSys.playAttack(); 
             }
             else if(this.content === 'trap') {
@@ -431,6 +455,10 @@ class Coffin extends Entity {
     }
     draw(ctx) {
         if(this.shake>0){ctx.translate((Math.random()-.5)*4,0);this.shake--;}
+        if(!this.opened) {
+            ctx.fillStyle = '#aaa'; ctx.font='12px serif'; ctx.textAlign='center';
+            ctx.fillText(LANG[curLang].labels.coffin, 0, -50);
+        }
         ctx.save();
         ctx.rotate(Math.PI/2); 
         if(!this.opened){
@@ -483,6 +511,8 @@ class Zombie extends Entity {
         ctx.translate(0,this.hop||0);
         if(Game.p.buffs.hoof>0) { ctx.fillStyle='#f00'; ctx.font='20px serif'; ctx.fillText('!', 0, -50); }
         const isSprinter = this.zType === 1;
+        if(isSprinter) { ctx.fillStyle = '#ff5252'; ctx.font='12px serif'; ctx.textAlign='center'; ctx.fillText(LANG[curLang].labels.sprinter, 0, -50); }
+        
         ctx.fillStyle = '#000'; ctx.fillRect(-10,-42,20,5); ctx.fillRect(-6,-48,12,6); // Hat
         ctx.fillStyle = isSprinter ? '#ff5252' : '#e53935'; ctx.beginPath(); ctx.arc(0,-50,3,0,6.28); ctx.fill();
         ctx.fillStyle = isSprinter ? '#b71c1c' : '#1a237e'; ctx.fillRect(-12,-25,24,25); // Robe
@@ -499,16 +529,15 @@ class Trap extends Entity {
         const data = LEVELS_DATA[Math.min(lvlIndex,9)];
         this.pType = data.type === 'MIX' ? Object.keys(PROJ_TYPES)[Math.floor(Math.random()*4)] : data.type;
         this.color = data.col;
-        this.name = LANG[curLang].levelNames[Math.min(lvlIndex,9)]; 
+        this.name = LANG[curLang].trapNames[Math.min(lvlIndex,9)]; 
         this.lvlIdx = Math.min(lvlIndex,9);
     }
     update(dt,p){
-        // Check distance to player. If close enough, start cooldown loop
         const dist = Math.hypot(this.x-p.x, this.y-p.y);
         if(dist < 400) {
             this.cd-=dt;
             if(this.cd<0){
-                this.cd = 1.5 + Math.random()*0.5; // Slower fire rate for fairness
+                this.cd = 1.5 + Math.random()*0.5; 
                 const pdx=p.x-this.x, pdy=p.y-this.y, ang=Math.atan2(pdy,pdx);
                 Game.spawn(new Projectile(this.x,this.y,ang,this.pType)); 
                 AudioSys.playTrap(dist);
@@ -520,7 +549,7 @@ class Trap extends Entity {
         ctx.fillStyle='#212121'; ctx.beginPath(); ctx.moveTo(-15,-20); ctx.lineTo(-18,0); ctx.lineTo(18,0); ctx.lineTo(15,-20); ctx.fill();
         ctx.fillStyle='#f44336'; const pulse = 3 + Math.sin(Date.now()/100)*2; ctx.beginPath(); ctx.arc(0,-28, pulse, 0, 6.28); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.font = '12px serif'; ctx.textAlign='center'; 
-        ctx.fillText(LANG[curLang].levelNames[this.lvlIdx], 0, -40);
+        ctx.fillText(LANG[curLang].trapNames[this.lvlIdx], 0, -45);
     }
 }
 
@@ -574,11 +603,21 @@ class Player extends Entity {
         if(this.buffs.hoof>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fillStyle='rgba(161,136,127,0.3)'; ctx.fill(); }
         if(this.buffs.jade>0) { ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=2; ctx.stroke(); }
         ctx.rotate(Math.atan2(Input.y,Input.x));
+        
+        // Squash & Stretch
+        let scaleX = 1, scaleY = 1;
+        if(Input.active) { scaleX = 1.1; scaleY = 0.9; }
+        ctx.scale(scaleX, scaleY);
+
         const lOffset = Math.sin(this.stepPhase) * 6;
         ctx.fillStyle='#3e2723'; ctx.fillRect(-8, -5 + lOffset, 6, 12); ctx.fillRect(2, -5 + Math.sin(this.stepPhase + Math.PI) * 6, 6, 12);
         ctx.fillStyle='#5d4037'; ctx.fillRect(-10,-10,20,18); ctx.fillStyle='#8d6e63'; ctx.fillRect(-8,-8,16,10);
         ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(0,0,7,0,6.28); ctx.fill();
-        ctx.fillStyle='#ffecb3';ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
+        
+        // Held Lamp
+        ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.arc(12, 5, 3, 0, 6.28); ctx.fill();
+        
+        ctx.globalAlpha=0.2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,50,-0.5,0.5);ctx.fill();ctx.globalAlpha=1;
     }
 }
 
@@ -601,8 +640,6 @@ const MapSys = {
                 }
             }
         }
-        const last = rms[rms.length-1];
-        for(let Y=last.y; Y<last.y+last.h; Y++) for(let X=last.x; X<last.x+last.w; X++) this.t[Y*this.w+X] = 2;
         return rms;
     },
     get: function(px,py){
@@ -627,11 +664,8 @@ const Game = {
         document.getElementById('game-title').innerText = txt.title;
         document.getElementById('game-ver').innerText = txt.ver;
         document.getElementById('intro-p1').innerHTML = txt.p1;
-        document.getElementById('intro-p2').innerHTML = txt.p2;
-        document.getElementById('intro-p3').innerHTML = txt.p3;
-        document.getElementById('intro-p4').innerHTML = txt.p4;
-        document.getElementById('intro-p5').innerHTML = txt.p5;
         document.getElementById('start-btn-text').innerText = txt.startBtn;
+        document.getElementById('trap-label').innerText = txt.trapLabel; 
         document.getElementById('art-label').innerText = txt.artLabel;
         document.getElementById('modal-btn-text').innerText = txt.modalBtn;
         document.getElementById('end-title').innerText = txt.endTitle;
@@ -640,6 +674,12 @@ const Game = {
         document.getElementById('win-title').innerText = txt.winTitle;
         document.getElementById('win-desc').innerText = txt.winDesc;
         document.getElementById('win-btn').innerText = txt.winBtn;
+        
+        const exitTxt = LANG[curLang].exitModal;
+        document.getElementById('exit-title').innerText = exitTxt.t;
+        document.getElementById('exit-desc').innerHTML = exitTxt.d;
+        document.querySelectorAll('#exit-modal .btn')[0].innerText = exitTxt.yes;
+        document.querySelectorAll('#exit-modal .btn')[1].innerText = exitTxt.no;
     },
 
     init: function(){
@@ -663,6 +703,25 @@ const Game = {
         document.getElementById('item-modal').classList.remove('active');
         this.pause = false;
         if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
+    },
+    
+    showExitModal: function() {
+        document.getElementById('exit-modal').classList.add('active');
+        this.pause = true;
+    },
+    cancelExit: function() {
+        document.getElementById('exit-modal').classList.remove('active');
+        this.pause = false;
+        this.p.y -= 60; 
+    },
+    confirmNextLevel: function() {
+        document.getElementById('exit-modal').classList.remove('active');
+        this.pause = false;
+        if(this.lvl>=10){ this.victory(); }
+        else {
+            this.saved={hp:this.p.hp}; 
+            this.load(this.lvl+1);
+        }
     },
     
     addText: function(x, y, text, color) {
@@ -740,7 +799,22 @@ const Game = {
         const name = curLang === 'CN' ? a.n : a.en;
         const desc = curLang === 'CN' ? a.d : a.end;
         this.showModal(name, a.i, desc);
-        this.pendingEffect = ()=>{this.art++; this.exit=1; this.msg(LANG[curLang].msgs.hole, "#0f0"); this.updateHUD();};
+        this.pendingEffect = ()=>{
+            this.art++; this.exit=1; 
+            this.msg(LANG[curLang].msgs.hole, "#0f0"); 
+            this.updateHUD();
+            
+            // Flood logic
+            const erX = Math.floor(this.exitPos.x/CONFIG.TILE);
+            const erY = Math.floor(this.exitPos.y/CONFIG.TILE);
+            for(let y=erY-5; y<erY+5; y++){
+                for(let x=erX-5; x<erX+5; x++){
+                     if(MapSys.get(x*CONFIG.TILE, y*CONFIG.TILE) === TERRAIN.FLOOR) {
+                         MapSys.t[y*MapSys.w+x] = 2;
+                     }
+                }
+            }
+        };
     },
     getItem: function(c) {
         AudioSys.playItem(true);
@@ -748,7 +822,7 @@ const Game = {
         const item = LANG[curLang].items[key];
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const col = colors[key];
-        const iconMap = {candle:'🕯️', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
+        const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         
         this.showModal(item.n, iconMap[key], item.d, col);
         this.pendingEffect = ()=>{
@@ -793,20 +867,15 @@ const Game = {
         this.ents.sort((a,b)=>a.y-b.y);
         
         this.ents.forEach(e=>{
-            if(e.update) e.type==='zombie'||e.type==='trap'||e.type==='proj'||e.type==='ground_item'?e.update(dt,this.p):e.update(dt);
+            if(e.update) e.type==='zombie'||e.type==='trap'||e.type==='proj'||e.type==='ground_item'||e.type==='effect'?e.update(dt,this.p):e.update(dt);
             if(e.type==='coffin'&&!e.opened&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<40) e.interact();
         });
         
-        // Texts update
         this.texts = this.texts.filter(t=>t.life>0);
         this.texts.forEach(t=>t.update());
         
         if(this.exit && Math.hypot(this.exitPos.x-this.p.x, this.exitPos.y-this.p.y)<30){
-            if(this.lvl>=10){ this.victory(); }
-            else{
-                this.saved={hp:this.p.hp}; 
-                this.load(this.lvl+1);
-            }
+            this.showExitModal();
         }
         this.render();
     },
@@ -828,26 +897,23 @@ const Game = {
                 const t = MapSys.t[y*MapSys.w+x];
                 const px=x*CONFIG.TILE, py=y*CONFIG.TILE;
                 
-                if(t==0){ // Floor (No Grid)
+                if(t==0){ 
                     ctx.fillStyle='#2d241e'; ctx.fillRect(px,py,50,50);
                     ctx.fillStyle='rgba(0,0,0,0.1)'; if((x+y)%5===0) ctx.fillRect(px+10,py+10,5,5);
                 } 
-                else if(t==2) { // Water
+                else if(t==2) { 
                     ctx.fillStyle='#01579b';ctx.fillRect(px,py,50,50);
                     ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=2;
                     ctx.beginPath(); const off = Math.sin(now/400 + x/2)*10;
                     ctx.moveTo(px, py+25+off); ctx.lineTo(px+50, py+25-off); ctx.stroke();
                 }
-                else { // Wall (Brick Pattern)
+                else { 
                     ctx.fillStyle = wallCol; ctx.fillRect(px, py, 50, 50);
                     ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 2;
                     ctx.beginPath();
-                    ctx.moveTo(px, py); ctx.lineTo(px+50, py);
-                    ctx.moveTo(px, py+25); ctx.lineTo(px+50, py+25);
+                    ctx.moveTo(px, py); ctx.lineTo(px+50, py); ctx.moveTo(px, py+25); ctx.lineTo(px+50, py+25);
                     ctx.moveTo(px, py+50); ctx.lineTo(px+50, py+50);
-                    ctx.moveTo(px, py); ctx.lineTo(px, py+25);
-                    ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50);
-                    ctx.moveTo(px+50, py); ctx.lineTo(px+50, py+25);
+                    ctx.moveTo(px, py); ctx.lineTo(px, py+25); ctx.moveTo(px+25, py+25); ctx.lineTo(px+25, py+50); ctx.moveTo(px+50, py); ctx.lineTo(px+50, py+25);
                     ctx.stroke();
                 }
             }
@@ -860,7 +926,9 @@ const Game = {
             ctx.beginPath(); ctx.moveTo(-12,-30); ctx.lineTo(-12,30); ctx.moveTo(12,-30); ctx.lineTo(12,30);
             for(let i=-2; i<=2; i++) { ctx.moveTo(-12, i*12); ctx.lineTo(12, i*12); } 
             ctx.stroke();
-            ctx.fillStyle='#ffd700';ctx.font='20px serif';ctx.textAlign='center';ctx.fillText("⬇",0,0);
+            ctx.fillStyle='#ffd700';ctx.font='14px serif';ctx.textAlign='center';
+            ctx.fillText(LANG[curLang].labels.exit,0,-40); 
+            ctx.fillText("⬇",0,0);
             ctx.restore();
         }
 
@@ -874,20 +942,15 @@ const Game = {
             ctx.save(); ctx.translate(t.x,t.y); t.draw(ctx); ctx.restore();
         });
         
-        // Compass Logic
-        if(this.p.hasCompass) {
-            let target = null;
-            if(!this.exit && this.artifactPos) target = this.artifactPos; // Point to Artifact
-            else if(this.exit) target = this.exitPos; // Point to Exit
-
-            if(target) {
-                const dx=target.x-this.p.x, dy=target.y-this.p.y;
-                const ang=Math.atan2(dy,dx);
-                ctx.translate(this.p.x, this.p.y); ctx.rotate(ang); ctx.translate(70, 0);
-                ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
-                ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
-                ctx.shadowBlur=0;
-            }
+        if(this.exit && this.p.hasCompass) {
+            let target = this.exitPos;
+            if(!this.exit && this.artifactPos) target = this.artifactPos;
+            const dx=target.x-this.p.x, dy=target.y-this.p.y;
+            const ang=Math.atan2(dy,dx);
+            ctx.translate(this.p.x, this.p.y); ctx.rotate(ang); ctx.translate(70, 0);
+            ctx.shadowBlur=10; ctx.shadowColor='#ffd700';
+            ctx.fillStyle='#ffd700'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-10,10); ctx.lineTo(-10,-10); ctx.fill();
+            ctx.shadowBlur=0;
         }
 
         ctx.restore();
