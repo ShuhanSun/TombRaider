@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v40.0 Final Perfect)</title>
+    <title>寻龙诀:绝地求生 (v41.0 Final Perfect)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -362,7 +362,7 @@ const AudioSys = {
     playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
     playHurt: function() { 
         const now = Date.now();
-        if(now - this.lastHurt > 1000) { // Debounce
+        if(now - this.lastHurt > 1000) { // Debounce sound
             // Soft Pain Sound (Muffled Sine + Low Triangle)
             if(this.ctx) {
                 this.tone(120, 'sine', 0.2, 0.5, 80); 
