@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>寻龙诀:绝地求生 (v39.0 Smooth)</title>
+    <title>寻龙诀:绝地求生 (v40.0 Final Perfect)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #050505; touch-action: none; font-family: 'Courier New', monospace; user-select: none; -webkit-user-select: none; }
         canvas { display: block; }
@@ -11,8 +11,9 @@
         /* UI Layer */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
-        /* Joystick */
-        #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; }
+        /* Joystick (Touch Only) */
+        #joystick-zone { position: absolute; bottom: 50px; right: 50px; width: 140px; height: 140px; pointer-events: auto; border: 2px solid rgba(255,255,255,0.1); border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%); transition: opacity 0.3s; display: none; } /* Hidden by default, shown on touch */
+        @media (pointer: coarse) { #joystick-zone { display: block; } }
         #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: rgba(180, 140, 90, 0.9); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 4px 15px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.3); }
         
         /* HUD */
@@ -66,7 +67,7 @@
         }
         .overlay.active { display: flex; opacity: 1; }
         
-        /* SMALLER Item Card */
+        /* SMALLER Item Card (Only for Artifacts now) */
         #item-card {
             background: linear-gradient(145deg, #1a120b, #2c1e16); border: 2px solid #8d6e63;
             padding: 20px; border-radius: 10px; text-align: center;
@@ -125,7 +126,7 @@
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
 </div>
 
-<!-- Item Modal (Smaller) -->
+<!-- Item Modal (Artifacts Only) -->
 <div id="item-modal" class="overlay">
     <div id="item-card">
         <span id="item-icon">📦</span>
@@ -163,7 +164,7 @@
 <div id="start-screen" class="overlay active">
     <div id="lang-switch" onclick="Game.toggleLang()">中文 / English</div>
     <h1 id="game-title">寻龙诀</h1>
-    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V39.0</p>
+    <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">绝地求生 V40.0</p>
     
     <div class="intro-box">
         <p class="intro-text" id="intro-p1">
@@ -181,8 +182,8 @@
 
 <script>
 /**
- * TombRaider_Survival v39.0 Smooth
- * Updates: Coffin Collision + Interaction Timer, No-Pause Modal, Audio Debounce.
+ * TombRaider_Survival v40.0 Final Perfect
+ * Updates: Keyboard Support, No Item Modal for Special Items (Auto Pickup), Soft Pain Sound.
  */
 
 const CONFIG = { TILE: 50, BASE_SIGHT: 300, ZOMBIE_SPD: 55, SPRINTER_SPD: 140 };
@@ -229,7 +230,7 @@ const PROJ_TYPES = {
 const LANG = {
     CN: {
         title: "寻龙诀",
-        ver: "绝地求生 V39.0",
+        ver: "绝地求生 V40.0",
         p1: "传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。",
         startBtn: "点灯摸金",
         level: "第 %s 层 | %m",
@@ -269,7 +270,7 @@ const LANG = {
     },
     EN: {
         title: "Tomb Raider",
-        ver: "Survival V39.0",
+        ver: "Survival V40.0",
         p1: "Ancient tombs hold countless treasures. As a Raider, descend 10 levels. Find the <b>Artifact</b> to unlock the exit. Use the Feng Shui Compass to guide your way.",
         startBtn: "Start Raid",
         level: "Level %s | %m",
@@ -361,9 +362,12 @@ const AudioSys = {
     playAttack: function() { this.tone(150, 'sawtooth', 0.3, 0.3, 50); },
     playHurt: function() { 
         const now = Date.now();
-        if(now - this.lastHurt > 1000) { // Debounce sound
-            this.tone(120, 'sawtooth', 0.3, 0.5, 80); 
-            setTimeout(()=>this.tone(80, 'square', 0.2, 0.3), 100);
+        if(now - this.lastHurt > 1000) { // Debounce
+            // Soft Pain Sound (Muffled Sine + Low Triangle)
+            if(this.ctx) {
+                this.tone(120, 'sine', 0.2, 0.5, 80); 
+                setTimeout(()=>this.tone(60, 'triangle', 0.3, 0.4), 50);
+            }
             this.lastHurt = now;
         }
     },
@@ -371,8 +375,10 @@ const AudioSys = {
 };
 
 // --- Input ---
-const Input = { x:0, y:0, active:false };
+const Input = { x:0, y:0, active:false, keys:{} };
+
 (function(){
+    // Touch
     const z=document.getElementById('joystick-zone'), k=document.getElementById('joystick-knob');
     const h = (e,end)=>{
         const t=e.touches?e.touches[0]:e, r=z.getBoundingClientRect();
@@ -388,6 +394,36 @@ const Input = { x:0, y:0, active:false };
     z.addEventListener('mousedown',e=>{Input.m=1;h(e)});
     window.addEventListener('mousemove',e=>{if(Input.m)h(e)});
     window.addEventListener('mouseup',e=>{if(Input.m){Input.m=0;h(e,1)}});
+
+    // Keyboard
+    window.addEventListener('keydown', e => {
+        Input.keys[e.code] = true;
+        updateKeyDir();
+    });
+    window.addEventListener('keyup', e => {
+        Input.keys[e.code] = false;
+        updateKeyDir();
+    });
+
+    function updateKeyDir() {
+        let kx = 0, ky = 0;
+        if (Input.keys['ArrowUp'] || Input.keys['KeyW']) ky -= 1;
+        if (Input.keys['ArrowDown'] || Input.keys['KeyS']) ky += 1;
+        if (Input.keys['ArrowLeft'] || Input.keys['KeyA']) kx -= 1;
+        if (Input.keys['ArrowRight'] || Input.keys['KeyD']) kx += 1;
+
+        // Only override if touch is inactive or keyboard is pressed
+        if (kx !== 0 || ky !== 0) {
+            // Normalize
+            const len = Math.hypot(kx, ky);
+            if (len > 0) { kx /= len; ky /= len; }
+            Input.x = kx; Input.y = ky; Input.active = true;
+        } else if (!Input.m) { // Don't reset if mouse dragging
+             // If no keys pressed, release (unless touch is active, handled separately)
+             // Simple conflict resolution: Key release stops active only if it was key-driven
+             if(!z.matches(':active')) { Input.active = false; Input.x=0; Input.y=0; }
+        }
+    }
 })();
 
 class FloatText {
@@ -863,41 +899,30 @@ const Game = {
     },
     
     showModal: function(t,i,d,c) {
-        document.getElementById('item-title').innerText=t; document.getElementById('item-title').style.color=c||'#ffd700';
-        document.getElementById('item-icon').innerText=i; document.getElementById('item-desc').innerHTML=d;
-        document.getElementById('item-modal').classList.add('active'); 
-        // NO PAUSE: this.pause=true; removed
-        
-        // Auto Close Feature
-        setTimeout(() => {
-             if(document.getElementById('item-modal').classList.contains('active')) {
-                 this.closeModal();
-             }
-        }, 2000);
+        // No modal logic for special items as requested in v40.0
     },
     
     getArtifact: function() {
         AudioSys.playItem(true);
         const a = ARTIFACTS[this.lvl-1];
         const name = curLang === 'CN' ? a.n : a.en;
-        const desc = curLang === 'CN' ? a.d : a.end;
-        this.showModal(name, a.i, desc);
-        this.pendingEffect = ()=>{
-            this.art++; this.exit=1; 
-            this.msg(LANG[curLang].msgs.hole, "#0f0"); 
-            this.updateHUD();
-            
-            const r = this.exitRoom;
-            for(let y=r.y; y<r.y+r.h; y++){
-                for(let x=r.x; x<r.x+r.w; x++){
-                     if(MapSys.get(x*CONFIG.TILE, y*CONFIG.TILE) === TERRAIN.FLOOR) {
-                         MapSys.t[y*MapSys.w+x] = 2;
-                     }
-                }
+        
+        // Direct Feedback (No Modal)
+        this.msg(`${LANG[curLang].modalBtn}: ${name}`, '#ffd700');
+        
+        this.art++; this.exit=1; 
+        this.msg(LANG[curLang].msgs.hole, "#0f0"); 
+        this.updateHUD();
+        
+        // Flood
+        const r = this.exitRoom;
+        for(let y=r.y; y<r.y+r.h; y++){
+            for(let x=r.x; x<r.x+r.w; x++){
+                 if(MapSys.get(x*CONFIG.TILE, y*CONFIG.TILE) === TERRAIN.FLOOR) {
+                     MapSys.t[y*MapSys.w+x] = 2;
+                 }
             }
-        };
-        // Immediate effect if not pausing
-        if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
+        }
     },
     getItem: function(c) {
         AudioSys.playItem(true);
@@ -905,19 +930,16 @@ const Game = {
         const item = LANG[curLang].items[key];
         const colors = {candle:'#ff8a80', wine:'#fff', hoof:'#a1887f', jade:'#a5d6a7', compass:'#ffd700'};
         const col = colors[key];
+        const iconMap = {candle:'🪔', wine:'🍶', hoof:'🐴', jade:'🥋', compass:'🧭'};
         
-        this.showModal(item.n, '📦', item.d, col); // Using box icon generic here or map specific if needed, kept generic to simplify code flow
+        // Direct Pickup (No Modal)
+        AudioSys.playUse();
         
-        this.pendingEffect = ()=>{
-            AudioSys.playUse();
-            if(c==='item_candle'){ this.p.sight+=150; this.msg(LANG[curLang].msgs.candle, col); this.addItemIcon('🪔'); }
-            if(c==='item_compass'){ this.p.hasCompass=1; this.msg(LANG[curLang].msgs.compass, col); this.addItemIcon('🧭'); }
-            if(c==='item_wine'){ this.p.hp=Math.min(5,this.p.hp+1); this.msg(LANG[curLang].msgs.heal, col); this.updateHUD(); }
-            if(c==='item_hoof'){ this.p.buffs.hoof=15; this.msg(LANG[curLang].msgs.repel, col); this.addItemIcon('🐴'); }
-            if(c==='item_jade'){ this.p.buffs.jade=15; this.msg(LANG[curLang].msgs.immune, col); this.addItemIcon('🥋'); }
-        };
-        // Immediate
-        if(this.pendingEffect) { this.pendingEffect(); this.pendingEffect = null; }
+        if(c==='item_candle'){ this.p.sight+=150; this.msg(LANG[curLang].msgs.candle, col); this.addItemIcon('🪔'); }
+        if(c==='item_compass'){ this.p.hasCompass=1; this.msg(LANG[curLang].msgs.compass, col); this.addItemIcon('🧭'); }
+        if(c==='item_wine'){ this.p.hp=Math.min(5,this.p.hp+1); this.msg(LANG[curLang].msgs.heal, col); this.updateHUD(); }
+        if(c==='item_hoof'){ this.p.buffs.hoof=15; this.msg(LANG[curLang].msgs.repel, col); this.addItemIcon('🐴'); }
+        if(c==='item_jade'){ this.p.buffs.jade=15; this.msg(LANG[curLang].msgs.immune, col); this.addItemIcon('🥋'); }
     },
     
     spawn: function(e){this.ents.push(e);},
@@ -925,7 +947,6 @@ const Game = {
     updateHUD: function(){
         document.getElementById('hp-bar').innerText="❤".repeat(this.p.hp);
         
-        // Fix: %m garbage removal. Reconstruct level string properly.
         const lName = LANG[curLang].levelNames[Math.min(this.lvl-1,9)];
         const levelBase = LANG[curLang].level.split('|')[0].replace('%s', this.lvl).trim();
         document.getElementById('level-num').innerText = `${levelBase} | ${lName}`;
