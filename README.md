@@ -1,9 +1,11 @@
 # TombRaider
 
-TombRaider Survival Game
-Created by Shuhan Sun 
+Survival Game: Escape from a Tomb
 
 [Start Game](https://shuhansun.github.io/TombRaider/)
+
+Created by Shuhan Sun 
+
 
 
 
