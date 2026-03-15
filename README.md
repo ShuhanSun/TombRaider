@@ -9,7 +9,7 @@ Created by Shuhan Sun
 
 ----
 ## 中文介绍
-游戏《古墓逃生》
+游戏《寻龙诀》
 Shuhan 制作
 
 [开始游戏](https://shuhansun.github.io/TombRaider/)
