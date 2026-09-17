@@ -80,3 +80,37 @@
     .nine-grid button { min-height:68px !important; font-size:10px; }
     #mechanism-btn { bottom:max(20px,env(safe-area-inset-bottom)); }
 }
+
+
+.relic-inspection {
+    margin:12px auto 4px;
+    padding:22px 18px;
+    max-width:520px;
+    border:1px solid rgba(194,157,91,.32);
+    border-radius:8px;
+    background:radial-gradient(circle at 50% 16%,rgba(177,143,77,.10),rgba(7,11,9,.35) 65%);
+    text-align:center;
+}
+.relic-inspection .relic-symbol {
+    font-size:54px;
+    line-height:1;
+    margin-bottom:12px;
+    filter:drop-shadow(0 5px 12px rgba(0,0,0,.55));
+}
+.relic-inspection strong {
+    display:block;
+    color:#ead3a2;
+    font:500 23px/1.35 serif;
+    letter-spacing:2px;
+}
+.relic-inspection p {
+    margin:12px auto 0;
+    max-width:460px;
+    color:#bdb49f;
+    font-size:13px;
+    line-height:1.75;
+}
+.relic-inspection .relic-pattern {
+    color:#9fc3b7;
+}
+#relic-btn[hidden] { display:none !important; }
