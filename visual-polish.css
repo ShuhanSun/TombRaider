@@ -1,0 +1,68 @@
+/* Atmospheric polish: lightweight CSS only, no image assets. */
+#atmosphere-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(circle at 50% 46%, rgba(0,0,0,0) 0 44%, rgba(0,0,0,.18) 70%, rgba(0,0,0,.46) 100%),
+        linear-gradient(180deg, rgba(77,57,35,.035), rgba(21,38,35,.045));
+    opacity: .88;
+    transition: background .28s ease, opacity .28s ease;
+}
+#atmosphere-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(91deg, rgba(255,255,255,.008) 0 1px, transparent 1px 7px),
+        repeating-linear-gradient(3deg, rgba(0,0,0,.012) 0 1px, transparent 1px 9px);
+    opacity: .55;
+}
+body.breath-mode #atmosphere-overlay {
+    background:
+        radial-gradient(circle at 50% 48%, rgba(18,45,40,.035) 0 34%, rgba(8,20,18,.18) 70%, rgba(0,0,0,.52) 100%),
+        linear-gradient(180deg, rgba(35,66,58,.08), rgba(0,0,0,.12));
+    opacity: 1;
+}
+body.breath-mode #breath-btn {
+    box-shadow: 0 0 0 5px rgba(116,160,146,.08), inset 0 0 22px rgba(134,173,160,.18), 0 5px 18px rgba(0,0,0,.45);
+}
+body.breath-mode #breath-timer {
+    color: #d6e9e2;
+    text-shadow: 0 0 8px rgba(132,181,164,.55), 0 2px 4px #000;
+}
+
+#gameCanvas {
+    transition: opacity .18s ease;
+}
+
+/* Preserve UI clarity over the stronger tomb vignette. */
+#top-bar, #objective, #game-actions, #map-panel, #control-hint,
+#item-bar, #buff-bar, #msg-box, #level-title-box, #move-tutorial,
+#joystick-zone, #sprint-btn, #breath-btn, #breath-timer, #mechanism-btn {
+    z-index: 2;
+}
+
+#objective {
+    padding: 5px 9px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(5,10,9,.62), rgba(5,10,9,.08));
+}
+
+#map-panel {
+    box-shadow: 0 8px 24px rgba(0,0,0,.3), inset 0 0 24px rgba(171,139,83,.025);
+}
+
+#move-tutorial {
+    box-shadow: 0 8px 25px rgba(0,0,0,.38), inset 0 0 20px rgba(192,158,97,.035);
+}
+
+#breath-btn, #sprint-btn, .icon-btn, #mechanism-btn {
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #atmosphere-overlay, #gameCanvas, #breath-btn { transition: none; }
+}
