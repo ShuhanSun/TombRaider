@@ -11,4 +11,6 @@ jobs:
         with:
           node-version: '22'
       - run: node --check game.js
-      - run: node --test tests/game.test.cjs
+      - run: node --check game-optimizations.js
+      - run: node --check game-patches.js
+      - run: node --test tests/game.test.cjs tests/optimization-contract.test.cjs
