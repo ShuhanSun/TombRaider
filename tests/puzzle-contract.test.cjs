@@ -5,11 +5,12 @@ const fs=require('node:fs');
 const html=fs.readFileSync('index.html','utf8');
 const puzzle=fs.readFileSync('puzzle-system.js','utf8');
 
-test('puzzle UI is wired after core gameplay layers',()=>{
+test('puzzle UI is wired after core gameplay and before runtime presentation layers',()=>{
   assert.match(html,/id="mechanism-btn"/);
   assert.match(html,/id="puzzle-modal"/);
   assert.match(html,/puzzle-system\.css/);
-  assert.match(html,/game-patches\.js[\s\S]*puzzle-system\.js[\s\S]*puzzle-patches\.js/);
+  assert.match(html,/game-optimizations\.js[\s\S]*puzzle-system\.js[\s\S]*runtime-core\.js/);
+  assert.doesNotMatch(html,/puzzle-patches\.js/);
 });
 
 test('all ten floors have distinct puzzle definitions',()=>{
