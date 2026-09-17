@@ -16,4 +16,5 @@ jobs:
       - run: node --check puzzle-system.js
       - run: node --check puzzle-patches.js
       - run: node --check visual-polish.js
-      - run: node --test tests/game.test.cjs tests/optimization-contract.test.cjs tests/puzzle-contract.test.cjs tests/visual-polish-contract.test.cjs
+      - run: node --check interaction-polish.js
+      - run: node --test tests/game.test.cjs tests/optimization-contract.test.cjs tests/puzzle-contract.test.cjs tests/visual-polish-contract.test.cjs tests/interaction-polish-contract.test.cjs
