@@ -5,6 +5,29 @@
 (() => {
     'use strict';
 
+
+    const RELIC_DEFINITIONS = [
+        {name:'玄龟镇墓盘',en:'Xuan Turtle Burial Disk',icon:'🐢',pattern:'玄龟负北斗，龟甲八分；北、东南、西南三片星甲泛青光。',desc:'暗青石盘中央伏着玄龟，龟甲分成八块，边缘刻八方。三片甲纹微亮，显然不是装饰，而是墓道生门的方位密码。'},
+        {name:'三足金乌灯',en:'Three-Legged Sun Crow Lamp',icon:'🪔',pattern:'三足分别刻日升、日中、日落；点燃后金乌影依次投向东、南、西。',desc:'青铜油灯的灯座铸成三足金乌。灯火照墙时，乌影随三足刻痕显出一日太阳运行的次序。'},
+        {name:'双鱼阴阳佩',en:'Twin-Fish Yin-Yang Pendant',icon:'☯',pattern:'黑白双鱼相衔，黑鱼白眼、白鱼黑眼；四环可转，鱼眼均可朝内或朝外。',desc:'残缺玉佩由黑白双鱼组成。颜色只是第一层线索，鱼眼的朝向才决定阴阳是否真正归位。'},
+        {name:'九宫洛书镜',en:'Luoshu Nine-Palace Mirror',icon:'🪞',pattern:'镜背刻九宫点阵，中央五点；横、纵、斜三线皆须同数。',desc:'裂纹古铜镜背面不是花纹，而是一座九宫。部分格位固定，剩余点阵必须按洛书规律复原。'},
+        {name:'六兽司辰璧',en:'Six-Beast Time Jade',icon:'🐾',pattern:'六边黑玉刻鼠、虎、蛇、马、猴、犬，残月旁留有逆时针箭纹。',desc:'六兽不是生肖摆设，而是一圈读取顺序。残月决定起点，逆行刻痕决定方向。'},
+        {name:'七星葬魂尺',en:'Seven-Star Soul Ruler',icon:'📏',pattern:'七颗星石由近及远嵌入黑木，第三、第六星被血色刻痕圈住。',desc:'短尺上的七星对应墓门前的踏板。血痕星位代表死路，亮星则标示可踏的生路。'},
+        {name:'人面青铜觚',en:'Bronze Gu of Four Faces',icon:'🏺',pattern:'器身四面为喜、怒、哀、惧，四张脸的眼神分别指向不同目标。',desc:'青铜觚上的四张人脸不是表情装饰。它们借“生、兵、死、门”的隐语指向墓室里的真实方位。'},
+        {name:'无字天机简',en:'Wordless Celestial Slips',icon:'🎋',pattern:'黑竹简表面无字；火照、水映、血染后分别显出山、月、眼三纹。',desc:'竹简本身不给答案。只有把它带过墓中的火、水、血三处环境，隐藏纹样才会逐段显现。'},
+        {name:'五行镇墓鼎',en:'Five-Phase Sepulcher Cauldron',icon:'鼎',pattern:'方鼎五面分刻木、火、土、金、水，鼎耳箭纹首尾相接。',desc:'青铜方鼎把五行刻成一条闭合的相生链。墓门机关要求按“生”的次序，而不是按相克关系启动。'},
+        {name:'天门合契璧',en:'Heaven-Gate Covenant Jade',icon:'◈',pattern:'白玉合璧分天、地、人、龙四契；天居上、地承下、人处中，龙契最终封合中枢。',desc:'最终合璧并非一整块玉。主墓外围散落天地人三枚残契，找齐后才能在墓门处以龙契完成最后闭合。'}
+    ];
+
+    RELIC_DEFINITIONS.forEach((r,i)=>{
+        if(!ARTIFACTS[i])return;
+        ARTIFACTS[i].n=r.name;
+        ARTIFACTS[i].en=r.en;
+        ARTIFACTS[i].i=r.icon;
+        ARTIFACTS[i].d=r.desc;
+        ARTIFACTS[i].end=r.pattern;
+    });
+
     const PUZZLES = [
         {
             type:'sequence', title:'玄龟星位', enTitle:'Tortoise Star Bearings',
@@ -63,21 +86,18 @@
             hint1:'缺少的环境线索不会在墓门前凭空出现。', hint2:'火显山，水显月，血显眼。'
         },
         {
-            type:'sequence', title:'五音镇魂', enTitle:'Five-Tone Seal',
-            clue:'钟腹纹样把五音分别记作一点到五点。冥器上的敲击痕依次是：一点、三点、五点、两点、四点。',
-            enClue:'The five tones are marked with one to five dots. The strike marks read 1, 3, 5, 2, 4 dots.',
-            legend:'宫=1点 · 商=2点 · 角=3点 · 徵=4点 · 羽=5点', options:['宫','商','角','徵','羽'], answer:['宫','角','羽','商','徵'], max:5,
-            hint1:'先把音名换成点数。', hint2:'目标点数顺序是 1、3、5、2、4。'
+            type:'sequence', title:'五行归环', enTitle:'Five Phases in Cycle',
+            clue:'方鼎五面依次刻木、火、土、金、水，鼎耳箭纹首尾相接。按五行相生的次序启动五枚机关。',
+            enClue:'The cauldron marks Wood, Fire, Earth, Metal and Water in a closed generating cycle. Activate them in the generating order.',
+            options:['木','火','土','金','水'], answer:['木','火','土','金','水'], max:5,
+            hint1:'这里考的是“相生”，不是相克。', hint2:'木生火，火生土，土生金，金生水。'
         },
         {
-            type:'composite', title:'天枢总印', enTitle:'Tianshu Final Seal',
-            clue:'主墓总印要求同时校准“方位、显纹、次序”。三块残印散落在主墓外围，找齐之后才能完成最终机关。',
-            enClue:'The final seal combines direction, revealed symbol and sequence. Recover all three fragments in the outer burial chambers first.',
-            requires:['方','象','序'],
-            directionOptions:['北','东','南','西'], directionAnswer:'北',
-            symbolOptions:['山','月','眼'], symbolAnswer:'眼',
-            orderOptions:['1','3','5','7'], orderAnswer:['1','5','3'],
-            hint1:'三块残印分别对应三个独立条件。', hint2:'方位取北；显纹取眼；最后的次序是 1、5、3。'
+            type:'sequence', title:'天门合契', enTitle:'Heaven-Gate Covenant',
+            clue:'白玉合璧分天、地、人、龙四契。先在主墓外围找齐天、地、人三枚残契，再按“天覆、地承、人居其中、龙守中枢”的次序闭合。',
+            enClue:'The jade is divided into Heaven, Earth, Human and Dragon covenants. Recover the first three fragments, then close the seal in that order with Dragon last.',
+            requires:['天','地','人'], options:['天','地','人','龙'], answer:['天','地','人','龙'], max:4,
+            hint1:'前三枚残契必须先在主墓外围找到。', hint2:'顺序是天 → 地 → 人 → 龙。'
         }
     ];
 
@@ -134,6 +154,7 @@
         if(this.relicCollected||!this.running)return;
         const a=ARTIFACTS[this.lvl-1];
         this.relicCollected=true;
+        const relicBtn=document.getElementById('relic-btn');if(relicBtn)relicBtn.hidden=false;
         this.art++;
         this.exit=0;
         this.artifactPos={...this.exitPos};
@@ -147,6 +168,8 @@
     Game.load=function(level){
         baseLoad(level);
         this.relicCollected=false;
+        this.relicReview=false;
+        const relicBtn=document.getElementById('relic-btn');if(relicBtn)relicBtn.hidden=true;
         this.puzzleAttempts=0;
         this.puzzleState=null;
         this.worldClues=new Set();
@@ -166,9 +189,9 @@
         }
         if(level===10&&rooms.length>8){
             const a=roomCenter(3),b=roomCenter(6),c=roomCenter(8);
-            this.ents.push(new WorldClue(a.x,a.y,'方','北','seal'));
-            this.ents.push(new WorldClue(b.x,b.y,'象','眼','seal'));
-            this.ents.push(new WorldClue(c.x,c.y,'序','1-5-3','seal'));
+            this.ents.push(new WorldClue(a.x,a.y,'天','上','seal'));
+            this.ents.push(new WorldClue(b.x,b.y,'地','下','seal'));
+            this.ents.push(new WorldClue(c.x,c.y,'人','中','seal'));
         }
         this.hideMechanismButton();
         this.updateHUD();
@@ -217,8 +240,17 @@
         else if(d.type==='composite')this.puzzleState={direction:null,symbol:null,order:[]};
     };
 
+    Game.openRelicReview=function(){
+        if(!this.running||this.pause||!this.relicCollected)return;
+        this.relicReview=true;
+        this.pause=true;Input.reset();this.hideMechanismButton();
+        document.getElementById('puzzle-modal').classList.add('active');
+        this.renderPuzzle();
+    };
+
     Game.openPuzzle=function(){
         if(!this.running||this.pause||!this.relicCollected||this.exit)return;
+        this.relicReview=false;
         this.pause=true;Input.reset();this.hideMechanismButton();
         if(!this.puzzleState)this.resetPuzzleState();
         document.getElementById('puzzle-modal').classList.add('active');
@@ -226,12 +258,31 @@
     };
     Game.closePuzzle=function(){
         const m=document.getElementById('puzzle-modal');if(m)m.classList.remove('active');
+        this.relicReview=false;
         if(this.running)this.pause=false;
         this.lastTime=null;this.accumulator=0;
     };
 
     Game.renderPuzzle=function(){
         const d=puzzleFor(),a=ARTIFACTS[this.lvl-1],board=document.getElementById('puzzle-board');
+        const resetButton=document.getElementById('puzzle-reset-btn');
+        const submitButton=document.getElementById('puzzle-submit-btn');
+        const closeButton=document.getElementById('puzzle-close-btn');
+        if(this.relicReview){
+            document.getElementById('puzzle-title').textContent=cn()?'冥器线索':'RELIC CLUE';
+            document.getElementById('puzzle-relic').textContent=`${a.i||'◆'} ${cn()?a.n:a.en}`;
+            document.getElementById('puzzle-clue').textContent=cn()?`${a.d} ${a.end}`:`${a.en}. ${a.end}`;
+            document.getElementById('puzzle-world-clues').textContent=cn()?`墓道线索：${d.clue}`:`Gate clue: ${d.enClue}`;
+            document.getElementById('puzzle-feedback').textContent='';
+            document.getElementById('puzzle-hint').textContent='';
+            board.innerHTML=`<div class="relic-inspection"><div class="relic-symbol">${a.i||'◆'}</div><strong>${cn()?a.n:a.en}</strong><p>${a.d}</p><p class="relic-pattern">${a.end}</p></div>`;
+            if(resetButton)resetButton.style.display='none';
+            if(submitButton)submitButton.style.display='none';
+            if(closeButton)closeButton.textContent=cn()?'收起线索':'CLOSE';
+            return;
+        }
+        if(resetButton)resetButton.style.display='';
+        if(submitButton)submitButton.style.display='';
         document.getElementById('puzzle-title').textContent=cn()?d.title:d.enTitle;
         document.getElementById('puzzle-relic').textContent=`${a.i||'◆'} ${cn()?a.n:a.en}`;
         document.getElementById('puzzle-clue').textContent=cn()?d.clue:d.enClue;
@@ -316,6 +367,7 @@
     document.getElementById('puzzle-reset-btn')?.addEventListener('click',()=>Game.resetPuzzleUI());
     document.getElementById('puzzle-close-btn')?.addEventListener('click',()=>Game.closePuzzle());
     document.getElementById('mechanism-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();Game.openPuzzle();});
+    document.getElementById('relic-btn')?.addEventListener('pointerdown',e=>{e.preventDefault();Game.openRelicReview();});
 
     window.addEventListener('keydown',e=>{
         const modal=document.getElementById('puzzle-modal');
@@ -328,5 +380,13 @@
     },true);
 
     const baseUpdateUI=Game.updateUI.bind(Game);
-    Game.updateUI=function(){baseUpdateUI();this.updateHUD();this.updateMechanismButton();};
+    Game.updateUI=function(){
+        baseUpdateUI();
+        const relicBtn=document.getElementById('relic-btn');
+        if(relicBtn){
+            relicBtn.textContent=cn()?'冥':'REL';
+            relicBtn.setAttribute('aria-label',cn()?'查看冥器线索':'View relic clue');
+        }
+        this.updateHUD();this.updateMechanismButton();
+    };
 })();
