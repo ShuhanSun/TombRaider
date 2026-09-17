@@ -81,8 +81,10 @@
 
     const baseStep = Game.step.bind(Game);
     Game.step = function(dt) {
+        // Visual and interaction modules can append entities after load(); refresh once
+        // before the simulation so the very first tick sees the complete world.
+        this.rebuildEntityIndex();
         baseStep(dt);
-        if (this.running) this.rebuildEntityIndex();
     };
 
     // Preserve the optimized player behavior while replacing repeated full-array scans
