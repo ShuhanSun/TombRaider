@@ -1,0 +1,78 @@
+/* Latest gameplay controls and tutorial overlay. */
+html, body, #gameCanvas, #ui-layer {
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
+}
+
+#breath-btn {
+    position: absolute;
+    right: 166px;
+    bottom: max(136px, calc(env(safe-area-inset-bottom) + 118px));
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    border: 1px solid rgba(161, 183, 174, .55);
+    background: rgba(17, 31, 28, .86);
+    color: #d8e5df;
+    font-size: 14px;
+    letter-spacing: 1px;
+    pointer-events: auto;
+    touch-action: manipulation;
+    z-index: 30;
+    box-shadow: inset 0 0 18px rgba(105, 143, 129, .14), 0 5px 18px rgba(0, 0, 0, .35);
+}
+#breath-btn.active {
+    background: rgba(54, 74, 68, .92);
+    border-color: #b9d0c7;
+    transform: scale(.96);
+}
+#breath-timer {
+    position: absolute;
+    right: 179px;
+    bottom: max(118px, calc(env(safe-area-inset-bottom) + 100px));
+    width: 42px;
+    text-align: center;
+    color: #c8d8d2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 4px #000;
+    pointer-events: none;
+    z-index: 31;
+}
+
+#move-tutorial {
+    position: absolute;
+    right: 24px;
+    bottom: max(184px, calc(env(safe-area-inset-bottom) + 168px));
+    width: min(260px, 56vw);
+    padding: 10px 12px;
+    border: 1px solid rgba(201, 177, 126, .28);
+    border-radius: 7px;
+    background: rgba(8, 15, 13, .78);
+    color: #cbbd9b;
+    font-size: 12px;
+    line-height: 1.55;
+    text-align: right;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity .35s ease, transform .35s ease;
+    z-index: 20;
+}
+#move-tutorial.visible:not(.done) {
+    opacity: 1;
+    transform: translateY(0);
+}
+#move-tutorial strong { color: #ead8aa; font-weight: 600; }
+
+@media (pointer: fine) {
+    #breath-btn { right: 24px; bottom: 78px; }
+    #breath-timer { right: 37px; bottom: 60px; }
+    #move-tutorial { right: 24px; bottom: 160px; }
+}
+
+@media (max-width: 600px) {
+    #move-tutorial { font-size: 11px; width: 210px; }
+    #breath-btn { width: 62px; height: 62px; right: 164px; }
+    #breath-timer { right: 174px; }
+}

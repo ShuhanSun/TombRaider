@@ -2,10 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>寻龙诀 · 十层古墓</title>
     <link rel="stylesheet" href="styles.css">
-
+    <link rel="stylesheet" href="game-optimizations.css">
 </head>
 <body>
 
@@ -26,13 +26,13 @@
     <div id="buff-bar"></div>
     <div id="msg-box" role="status" aria-live="polite"></div>
     <div id="level-title-box"><div id="level-title-text"></div></div>
-
-    <!-- Controls -->
+    <div id="move-tutorial" aria-hidden="true"><strong>移动</strong><br>拖动右下摇杆探索墓道；开始移动后提示自动消失。</div>
     <div id="joystick-zone"><div id="joystick-knob"></div></div>
     <button id="sprint-btn" aria-label="按住冲刺">疾行</button>
+    <button id="breath-btn" aria-label="屏气">屏气</button>
+    <div id="breath-timer" aria-live="polite"></div>
 </div>
 
-<!-- Exit Confirm Modal -->
 <div id="exit-modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="exit-title">
     <div class="item-card" style="max-width:80%; width:300px;">
         <span class="exit-icon">🕳️</span>
@@ -44,14 +44,12 @@
 <div id="pause-modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title">
     <div class="pause-card"><div class="eyebrow">TOMB RAIDER</div><h2 id="pause-title">灯火未熄</h2><p id="pause-desc">歇息片刻，古墓中的时间已暂停。</p><button id="resume-btn" class="btn" onclick="Game.togglePause()">继续探索</button></div>
 </div>
-<!-- Game Over Screen -->
 <div id="game-over-modal" class="overlay">
     <h2 id="end-title">胜败乃兵家常事</h2>
     <p style="color:#ccc; margin-bottom:30px" id="end-desc">大侠请重新来过</p>
     <button class="btn" onclick="Game.restart()" id="end-btn">再探古墓</button>
 </div>
 
-<!-- Victory Screen -->
 <div id="victory-modal" class="overlay">
     <h2 id="win-title">摸金校尉 凯旋</h2>
     <div style="font-size:80px; margin-bottom:20px">🏆</div>
@@ -59,28 +57,19 @@
     <button class="btn" onclick="Game.restart()" id="win-btn">再来一局</button>
 </div>
 
-<!-- Start Screen -->
 <div id="start-screen" class="overlay active">
     <button id="lang-switch" onclick="Game.toggleLang()">中文 / English</button>
     <div class="eyebrow">SHUHAN SUN · TOMB RAIDER</div>
     <h1 id="game-title">寻龙诀</h1>
     <p style="color:#ffd700; letter-spacing: 2px; text-shadow: 0 0 5px #ff6f00;" id="game-ver">十层古墓 · 一盏孤灯</p>
-
-    <div class="intro-box">
-        <p class="intro-text" id="intro-p1">
-            传说中的古墓埋藏着无数金银财宝，但也由古代机关和复活的僵尸守卫。玩家扮演一名摸金校尉，需深入十层地下迷宫。每一层都有无数危险，只有开启棺材，<b>找到镇墓冥器</b>，才能打开通往下一层的盗洞，带着荣耀重返人间。
-        </p>
-    </div>
-
-    <div class="guide-grid"><div><span>01</span><strong id="guide-move">循光探路</strong><p id="guide-move-desc">WASD / 方向键移动，Shift 疾行；手机使用摇杆。</p></div><div><span>02</span><strong id="guide-find">驻足开棺</strong><p id="guide-find-desc">靠近石棺停留片刻，寻找本层唯一的镇墓冥器。</p></div><div><span>03</span><strong id="guide-exit">寻龙脱身</strong><p id="guide-exit-desc">拾取罗盘指引方向，取得冥器后前往盗洞。</p></div></div>
+    <div class="intro-box"><p class="intro-text" id="intro-p1">深入十层古墓，观察墓室结构与机关，寻找镇墓冥器留下的线索，并破解通往下一层的机关。尸祟并非所有时候都要硬战；利用屏气、地形和墓中机关活下去。</p></div>
+    <div class="guide-grid"><div><span>01</span><strong id="guide-move">循光探路</strong><p id="guide-move-desc">WASD / 方向键移动，Shift 疾行；手机使用摇杆。</p></div><div><span>02</span><strong id="guide-find">驻足开棺</strong><p id="guide-find-desc">拾取洛阳铲，观察棺椁、冥器与机关之间的关系。</p></div><div><span>03</span><strong id="guide-exit">破解墓门</strong><p id="guide-exit-desc">获得冥器线索后前往墓道机关，解谜进入下一层。</p></div></div>
     <button class="btn start-cta" style="margin-top:30px" onclick="Game.init()" id="start-btn-text">点灯摸金</button>
-
-    <div class="footer">
-        © 2025 Shuhan Sun. All Rights Reserved.<br>
-        Developed for TombRaider Survival Project.
-    </div>
+    <div class="footer">© 2025 Shuhan Sun. All Rights Reserved.<br>Developed for TombRaider Survival Project.</div>
 </div>
 
 <script src="game.js"></script>
+<script src="game-optimizations.js"></script>
+<script src="game-patches.js"></script>
 </body>
 </html>
