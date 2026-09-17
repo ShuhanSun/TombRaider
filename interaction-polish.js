@@ -55,10 +55,10 @@
         const t=this._teach||(this._teach={});
         if(!t.hasShovel&&this.p.hasShovel){t.hasShovel=true;coach.show('shovel','洛阳铲已收入物品栏。靠近尸祟会自动挥铲，不需要攻击按钮。','Shovel stored. Move close to a threat to attack automatically.');}
         if(!t.attack&&this.p.attackAnim>0){t.attack=true;coach.hide('shovel');}
-        const nearbyZombie=this.ents.some(e=>e.type==='zombie'&&!e.dead&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<180);
+        const nearbyZombie=Game.entitiesOf('zombie').some(e=>!e.dead&&Math.hypot(e.x-this.p.x,e.y-this.p.y)<180);
         if(nearbyZombie&&!t.breath&&t.hasShovel){coach.show('breath','遇到尸祟时可按“屏气”。你仍能缓慢移动，尸祟会先停住，再退回棺中。','Hold Breath near undead: you can still move slowly while they lose you and return to a coffin.',7);}
         if(this.p.breathing&&!t.breath){t.breath=true;coach.hide('breath');}
-        const revealed=this.ents.some(e=>e.type==='trap'&&e.revealed);
+        const revealed=Game.entitiesOf('trap').some(e=>e.revealed&&!e.dead);
         if(revealed&&!t.trap){t.trap=true;coach.show('trap','机关一旦显露就不会重新隐藏。石碑、石柱可挡住直线射击。','Revealed traps stay visible. Steles and columns block straight projectiles.',7);}
         if(this.relicCollected&&!t.relic){t.relic=true;coach.show('relic','冥器只是线索，不会自动开门。前往墓道机关，根据器物线索解谜。','The relic is a clue, not a key. Reach the passage mechanism and solve it.',7);}
         if(coach.active&&(Game.elapsed||0)>coach.until)coach.hide();
