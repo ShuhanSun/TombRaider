@@ -6,6 +6,7 @@
     <title>寻龙诀 · 十层古墓</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="game-optimizations.css">
+    <link rel="stylesheet" href="puzzle-system.css">
 </head>
 <body>
 
@@ -31,6 +32,25 @@
     <button id="sprint-btn" aria-label="按住冲刺">疾行</button>
     <button id="breath-btn" aria-label="屏气">屏气</button>
     <div id="breath-timer" aria-live="polite"></div>
+    <button id="mechanism-btn" aria-label="墓道机关">机关</button>
+</div>
+
+<div id="puzzle-modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="puzzle-title">
+    <div class="puzzle-card">
+        <div class="puzzle-eyebrow">RELIC MECHANISM</div>
+        <h2 id="puzzle-title">墓道机关</h2>
+        <div id="puzzle-relic"></div>
+        <p id="puzzle-clue"></p>
+        <div id="puzzle-world-clues"></div>
+        <div id="puzzle-board"></div>
+        <div id="puzzle-feedback" role="status" aria-live="polite"></div>
+        <div id="puzzle-hint"></div>
+        <div class="puzzle-actions">
+            <button id="puzzle-reset-btn" class="btn">重置</button>
+            <button id="puzzle-submit-btn" class="btn">确认机关</button>
+            <button id="puzzle-close-btn" class="btn">离开机关</button>
+        </div>
+    </div>
 </div>
 
 <div id="exit-modal" class="overlay" role="dialog" aria-modal="true" aria-labelledby="exit-title">
@@ -71,5 +91,7 @@
 <script src="game.js"></script>
 <script src="game-optimizations.js"></script>
 <script src="game-patches.js"></script>
+<script src="puzzle-system.js"></script>
+<script src="puzzle-patches.js"></script>
 </body>
 </html>
