@@ -5,10 +5,10 @@ const src=fs.readFileSync('visual-polish.js','utf8');
 const css=fs.readFileSync('visual-polish.css','utf8');
 const html=fs.readFileSync('index.html','utf8');
 
-test('visual polish layer is loaded after gameplay and puzzle systems',()=>{
+test('visual polish layer is loaded after gameplay, puzzle and runtime systems',()=>{
     assert.match(html,/visual-polish\.css/);
     assert.match(html,/id="atmosphere-overlay"/);
-    assert.match(html,/puzzle-patches\.js[\s\S]*visual-polish\.js/);
+    assert.match(html,/puzzle-system\.js[\s\S]*runtime-core\.js[\s\S]*visual-polish\.js/);
 });
 
 test('coffin opening keeps lid displacement and uses bounded blood or translucent smoke effects',()=>{
