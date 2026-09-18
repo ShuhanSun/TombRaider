@@ -8,6 +8,7 @@ const puzzle=fs.readFileSync('puzzle-system.js','utf8');
 test('puzzle UI is wired after core gameplay and before runtime presentation layers',()=>{
   assert.match(html,/id="mechanism-btn"/);
   assert.match(html,/id="puzzle-modal"/);
+  assert.match(html,/id="puzzle-visual"/);
   assert.match(html,/puzzle-system\.css/);
   assert.match(html,/game-optimizations\.js[\s\S]*puzzle-system\.js[\s\S]*runtime-core\.js/);
   assert.doesNotMatch(html,/puzzle-patches\.js/);
@@ -31,7 +32,7 @@ test('relic pickup no longer opens exit; solving the mechanism does',()=>{
 });
 
 test('failed puzzle attempts escalate hints without lethal final-hit punishment',()=>{
-  assert.match(puzzle,/this\.puzzleAttempts>=5/);
+  assert.match(puzzle,/this\.puzzleAttempts>=6/);
   assert.match(puzzle,/this\.puzzleAttempts>=3/);
   assert.match(puzzle,/if\(this\.p\.hp>1\)/);
 });
@@ -44,4 +45,27 @@ test('all ten relic identities replace treasure-value collectibles',()=>{
   assert.match(html,/id="relic-btn"/);
   assert.match(puzzle,/Game\.openRelicReview=function/);
   assert.match(puzzle,/relic-inspection/);
+});
+
+
+test('puzzles are randomized per floor instead of exposing fixed answers',()=>{
+  assert.match(puzzle,/makePuzzleVariant=level=>/);
+  assert.match(puzzle,/Math\.random\(\)/);
+  assert.match(puzzle,/transformed|magic\(\)/);
+  assert.match(puzzle,/sourceOrder/);
+  assert.match(puzzle,/startPhase/);
+});
+
+test('early floors reduce mechanism tracking after relic pickup',()=>{
+  assert.match(puzzle,/this\.artifactPos=this\.lvl<=3\?null/);
+  assert.match(puzzle,/revealRange=this\.lvl<=3\?48:86/);
+  assert.match(puzzle,/冥器上的纹路似乎另有所指/);
+});
+
+test('relic review includes graphical puzzle clues',()=>{
+  assert.match(puzzle,/visualHTML=\(d,relic\)=>/);
+  assert.match(puzzle,/compass-figure/);
+  assert.match(puzzle,/visual-nine/);
+  assert.match(puzzle,/star-figure/);
+  assert.match(puzzle,/env-figure/);
 });
