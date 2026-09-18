@@ -7,14 +7,14 @@
 
 
     const RELIC_DEFINITIONS = [
-        {name:'玄龟镇墓盘',en:'Xuan Turtle Burial Disk',icon:'🐢',pattern:'玄龟负北斗，龟甲八分；北、东南、西南三片星甲泛青光。',desc:'暗青石盘中央伏着玄龟，龟甲分成八块，边缘刻八方。三片甲纹微亮，显然不是装饰，而是墓道生门的方位密码。'},
-        {name:'三足金乌灯',en:'Three-Legged Sun Crow Lamp',icon:'🪔',pattern:'三足分别刻日升、日中、日落；点燃后金乌影依次投向东、南、西。',desc:'青铜油灯的灯座铸成三足金乌。灯火照墙时，乌影随三足刻痕显出一日太阳运行的次序。'},
+        {name:'玄龟镇墓盘',en:'Xuan Turtle Burial Disk',icon:'🐢',pattern:'玄龟负北斗，龟甲八分；三片星甲的位置每次入墓都会变化。',desc:'暗青石盘中央伏着玄龟，龟甲分成八块，边缘刻八方。三片甲纹微亮，显然不是装饰，而是墓道生门的方位密码。'},
+        {name:'三足金乌灯',en:'Three-Legged Sun Crow Lamp',icon:'🪔',pattern:'三足分别刻日升、日中、日落；墓室朝向变化时，金乌投影也会整体偏转。',desc:'青铜油灯的灯座铸成三足金乌。灯火照墙时，乌影随三足刻痕显出一日太阳运行的次序。'},
         {name:'双鱼阴阳佩',en:'Twin-Fish Yin-Yang Pendant',icon:'☯',pattern:'黑白双鱼相衔，黑鱼白眼、白鱼黑眼；四环可转，鱼眼均可朝内或朝外。',desc:'残缺玉佩由黑白双鱼组成。颜色只是第一层线索，鱼眼的朝向才决定阴阳是否真正归位。'},
         {name:'九宫洛书镜',en:'Luoshu Nine-Palace Mirror',icon:'🪞',pattern:'镜背刻九宫点阵，中央五点；横、纵、斜三线皆须同数。',desc:'裂纹古铜镜背面不是花纹，而是一座九宫。部分格位固定，剩余点阵必须按洛书规律复原。'},
         {name:'六兽司辰璧',en:'Six-Beast Time Jade',icon:'🐾',pattern:'六边黑玉刻鼠、虎、蛇、马、猴、犬，残月旁留有逆时针箭纹。',desc:'六兽不是生肖摆设，而是一圈读取顺序。残月决定起点，逆行刻痕决定方向。'},
-        {name:'七星葬魂尺',en:'Seven-Star Soul Ruler',icon:'📏',pattern:'七颗星石由近及远嵌入黑木，第三、第六星被血色刻痕圈住。',desc:'短尺上的七星对应墓门前的踏板。血痕星位代表死路，亮星则标示可踏的生路。'},
+        {name:'七星葬魂尺',en:'Seven-Star Soul Ruler',icon:'📏',pattern:'七颗星石由近及远嵌入黑木，每次会有两至三颗被血色刻痕圈住。',desc:'短尺上的七星对应墓门前的踏板。血痕星位代表死路，亮星则标示可踏的生路。'},
         {name:'人面青铜觚',en:'Bronze Gu of Four Faces',icon:'🏺',pattern:'器身四面为喜、怒、哀、惧，四张脸的眼神分别指向不同目标。',desc:'青铜觚上的四张人脸不是表情装饰。它们借“生、兵、死、门”的隐语指向墓室里的真实方位。'},
-        {name:'无字天机简',en:'Wordless Celestial Slips',icon:'🎋',pattern:'黑竹简表面无字；火照、水映、血染后分别显出山、月、眼三纹。',desc:'竹简本身不给答案。只有把它带过墓中的火、水、血三处环境，隐藏纹样才会逐段显现。'},
+        {name:'无字天机简',en:'Wordless Celestial Slips',icon:'🎋',pattern:'黑竹简表面无字；火照、水映、血染会显出每局不同的暗纹。',desc:'竹简本身不给答案。只有把它带过墓中的火、水、血三处环境，隐藏纹样才会逐段显现。'},
         {name:'五行镇墓鼎',en:'Five-Phase Sepulcher Cauldron',icon:'鼎',pattern:'方鼎五面分刻木、火、土、金、水，鼎耳箭纹首尾相接。',desc:'青铜方鼎把五行刻成一条闭合的相生链。墓门机关要求按“生”的次序，而不是按相克关系启动。'},
         {name:'天门合契璧',en:'Heaven-Gate Covenant Jade',icon:'◈',pattern:'白玉合璧分天、地、人、龙四契；天居上、地承下、人处中，龙契最终封合中枢。',desc:'最终合璧并非一整块玉。主墓外围散落天地人三枚残契，找齐后才能在墓门处以龙契完成最后闭合。'}
     ];
@@ -102,8 +102,68 @@
     ];
 
     const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-    const puzzleFor=()=>PUZZLES[Math.max(0,Math.min(PUZZLES.length-1,Game.lvl-1))];
     const cn=()=>curLang==='CN';
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    const shuffle=a=>{const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;};
+    const sample=(a,n)=>shuffle(a).slice(0,n);
+    const DIR8=['北','东北','东','东南','南','西南','西','西北'],DIR4=['北','东','南','西'];
+    const rot=(v,n,ring)=>ring[(ring.indexOf(v)+n+ring.length)%ring.length];
+    const rotSquare=g=>[g[6],g[3],g[0],g[7],g[4],g[1],g[8],g[5],g[2]];
+    const mirror=g=>[g[2],g[1],g[0],g[5],g[4],g[3],g[8],g[7],g[6]];
+    const magic=()=>{let g=[4,9,2,3,5,7,8,1,6],n=Math.floor(Math.random()*4);while(n--)g=rotSquare(g);return Math.random()<.5?mirror(g):g;};
+
+    const makePuzzleVariant=level=>{
+        const d=clone(PUZZLES[level-1]);
+        if(level===1){
+            const n=Math.floor(Math.random()*8);d.answer=[0,3,5].map(i=>DIR8[(i+n)%8]);d.options=DIR8.slice();d.visual=d.answer.slice();
+            d.clue='观察玄龟盘图像：三片青甲的位置才是本局星位。不要背固定答案。';d.hint2='本局：'+d.answer.join('、');
+        }else if(level===2){
+            const n=Math.floor(Math.random()*4);d.answer=['东','南','西'].map(x=>rot(x,n,DIR4));d.options=shuffle(DIR4);d.visual=d.answer.slice();
+            d.clue='墓室朝向会变化。按冥器图上的日升、日中、日落投影顺序操作。';d.hint2='本局：'+d.answer.join(' → ');
+        }else if(level===3){
+            const black=Math.random()<.5,pat=sample([['内','内','内','内'],['内','外','外','内'],['外','内','内','外']],1)[0];
+            const col=Array.from({length:4},(_,i)=>(i%2===0)===black?'黑':'白');d.answer=col.map((x,i)=>x+'·'+pat[i]);d.visual=d.answer.slice();
+            d.start=Array.from({length:4},()=>d.states[Math.floor(Math.random()*d.states.length)]);if(same(d.start,d.answer))d.start[0]=d.states[(d.states.indexOf(d.start[0])+1)%4];
+            d.clue='黑白必须交替，但四只鱼眼的朝向也由本局玉佩图决定。';d.hint2='本局：'+d.answer.join(' ｜ ');
+        }else if(level===4){
+            d.answer=magic();d.visual=d.answer.slice();d.editable=sample([0,1,2,3,5,6,7,8],5).sort((a,b)=>a-b);d.start=d.answer.slice();
+            const vals=shuffle(d.editable.map(i=>d.start[i]));d.editable.forEach((x,i)=>d.start[x]=vals[i]);if(same(d.start,d.answer)){const a=d.editable[0],b=d.editable[1];[d.start[a],d.start[b]]=[d.start[b],d.start[a]];}
+            d.clue='九宫会旋转或镜像。不要背固定朝向，只保证横、纵、斜线之和一致。';d.hint2='每条直线都应合计十五点。';
+        }else if(level===5){
+            d.ring=shuffle(['鼠','虎','蛇','马','猴','犬']);const at=Math.floor(Math.random()*6),rev=Math.random()<.5;d.startBeast=d.ring[at];d.reverse=rev;
+            d.answer=Array.from({length:6},(_,i)=>d.ring[(at+(rev?-i:i)+12)%6]);d.options=shuffle(d.ring);d.max=6;d.visual=d.ring.slice();
+            d.clue='月痕决定起点，箭纹决定顺逆；六兽每局重新排位。';d.hint2='本局：'+d.answer.join(' → ');
+        }else if(level===6){
+            d.scars=sample(d.options,Math.random()<.5?2:3).sort();d.answer=d.options.filter(x=>!d.scars.includes(x));d.max=d.answer.length;d.visual=d.scars.slice();
+            d.clue='血痕星位每局变化。由近及远，只踏没有血痕的亮星。';d.hint2='避开：'+d.scars.join('、');
+        }else if(level===7){
+            d.directions=shuffle(['出口','兵器','棺椁','背门','祭台','水道']);d.start=d.faces.map(()=>Math.floor(Math.random()*d.directions.length));d.answer=['出口','兵器','棺椁','背门'];
+            d.clue='祭台和水道是干扰项。理解“喜见生、怒见兵、哀见死、惧不见门”。';
+        }else if(level===8){
+            const order=shuffle(['火','水','血']),symbols=sample(['山','月','眼','门','星','蛇'],3);d.sourceOrder=order;d.worldMap={火:symbols[0],水:symbols[1],血:symbols[2]};
+            d.answer=order.map(k=>d.worldMap[k]);d.options=shuffle(['山','月','眼','门','星','蛇']);d.max=3;d.visual=order.slice();
+            d.clue='火、水、血显出的符号与读取顺序每局变化。先找齐环境显纹，再按竹边小印组合。';d.hint2='本局：'+d.answer.join(' → ');
+        }else if(level===9){
+            const c=['木','火','土','金','水'],at=Math.floor(Math.random()*5);d.answer=Array.from({length:5},(_,i)=>c[(at+i)%5]);d.options=shuffle(c);d.startPhase=d.answer[0];d.visual=[d.startPhase];
+            d.clue='五行相生不变，但起始缺口每局不同。';d.hint2='本局：'+d.answer.join(' → ');
+        }
+        return d;
+    };
+    const puzzleFor=()=>Game.puzzleDef||PUZZLES[Math.max(0,Math.min(PUZZLES.length-1,Game.lvl-1))];
+
+    const visualHTML=(d,relic)=>{
+        if(!relic)return '<div class="mechanism-figure"><span>◉</span><span>◌</span><span>◉</span><span>◌</span></div>';
+        if(Game.lvl===1)return '<div class="compass-figure">'+DIR8.map(x=>'<span class="'+(d.visual.includes(x)?'lit':'')+'">'+x+'</span>').join('')+'</div>';
+        if(Game.lvl===2)return '<div class="sun-figure">'+d.visual.map(x=>'<span.☀<b>'+x+'</b></span>').join('<i>→</i>')+'</div>';
+        if(Game.lvl===3)return '<div class="fish-figure">'+d.visual.map(x=>'<span class="'+(x[0]==='黑'?'black':'white')+'">◉<b>'+x.slice(2)+'</b></span>').join('')+'</div>';
+        if(Game.lvl===4)return '<div class="visual-nine">'+d.visual.map(n=>'<span>'+'●'.repeat(n)+'</span>').join('')+'</div>';
+        if(Game.lvl===5)return '<div class="beast-figure">'+d.ring.map(x=>'<span class="'+(x===d.startBeast?'lit':'')+'">'+x+'</span>').join('')+'<b>'+(d.reverse?'↺':'↻')+'</b></div>';
+        if(Game.lvl===6)return '<div class="star-figure">'+['1','2','3','4','5','6','7'].map(x=>'<span class="'+(d.scars.includes(x)?'scar':'')+'">★<b>'+x+'</b></span>').join('')+'</div>';
+        if(Game.lvl===7)return '<div class="face-figure"><span>喜</span><span>怒</span><span>哀</span><span>惧</span></div>';
+        if(Game.lvl===8)return '<div class="env-figure">'+d.sourceOrder.map(x=>'<span>'+(x==='火'?'🔥':x==='水'?'≈':'●')+'<b>'+x+'</b></span>').join('<i>→</i>')+'</div>';
+        if(Game.lvl===9)return '<div class="phase-figure">'+['木','火','土','金','水'].map(x=>'<span class="'+(x===d.startPhase?'lit':'')+'">'+x+'</span>').join('')+'</div>';
+        return '<div class="seal-figure"><span>天</span><span>地</span><span>人</span>龙</span></div>';
+    };
 
     class TombMechanism extends Entity {
         constructor(x,y){super(x,y,'mechanism');this.radius=24;this.projectileBlocker=true;}
@@ -157,7 +217,7 @@
         const relicBtn=document.getElementById('relic-btn');if(relicBtn)relicBtn.hidden=false;
         this.art++;
         this.exit=0;
-        this.artifactPos={...this.exitPos};
+        this.artifactPos=this.lvl<=3?null:{...this.exitPos};
         AudioSys.playItem(true);
         this.msg(cn()?`发现冥器：${a.n} · 新的谜题线索已发现`:`Relic found: ${a.en} · new puzzle clue discovered`,'#dfc58c');
         this.updateHUD();
@@ -174,6 +234,7 @@
         this.puzzleState=null;
         this.worldClues=new Set();
         this.worldClueValues={};
+        this.puzzleDef=makePuzzleVariant(level);
         const gate=new TombMechanism(this.exitPos.x,this.exitPos.y+34);
         this.ents.push(gate);
         const rooms=MapSys.lastRooms||[];
@@ -182,13 +243,14 @@
             return{x:(r.x+r.w/2)*CONFIG.TILE,y:(r.y+r.h/2)*CONFIG.TILE};
         };
         if(level===8&&rooms.length>6){
-            const f=roomCenter(2),w=roomCenter(4),b=roomCenter(6);
-            this.ents.push(new WorldClue(f.x,f.y,'火','山','fire'));
-            this.ents.push(new WorldClue(w.x,w.y,'水','月','water'));
-            this.ents.push(new WorldClue(b.x,b.y,'血','眼','blood'));
+            const def=this.puzzleDef,slots=shuffle([2,3,4,5,6]).slice(0,3);
+            const f=roomCenter(slots[0]),w=roomCenter(slots[1]),b=roomCenter(slots[2]);
+            this.ents.push(new WorldClue(f.x,f.y,'火',def.worldMap.火,'fire'));
+            this.ents.push(new WorldClue(w.x,w.y,'水',def.worldMap.水,'water'));
+            this.ents.push(new WorldClue(b.x,b.y,'血',def.worldMap.血,'blood'));
         }
         if(level===10&&rooms.length>8){
-            const a=roomCenter(3),b=roomCenter(6),c=roomCenter(8);
+            const slots=shuffle([2,3,4,5,6,7,8]).slice(0,3),a=roomCenter(slots[0]),b=roomCenter(slots[1]),c=roomCenter(slots[2]);
             this.ents.push(new WorldClue(a.x,a.y,'天','上','seal'));
             this.ents.push(new WorldClue(b.x,b.y,'地','下','seal'));
             this.ents.push(new WorldClue(c.x,c.y,'人','中','seal'));
@@ -202,7 +264,8 @@
     };
     Game.updateMechanismButton=function(){
         const b=document.getElementById('mechanism-btn');if(!b||!this.p)return;
-        const near=Math.hypot(this.exitPos.x-this.p.x,(this.exitPos.y+34)-this.p.y)<86;
+        const revealRange=this.lvl<=3?48:86;
+        const near=Math.hypot(this.exitPos.x-this.p.x,(this.exitPos.y+34)-this.p.y)<revealRange;
         b.classList.toggle('visible',!!(near&&this.relicCollected&&!this.exit&&!this.pause));
         b.textContent=cn()?'机关':'MECHANISM';
     };
@@ -224,7 +287,8 @@
         } else if(this.relicCollected&&!this.exit){
             const def=puzzleFor();
             const missing=(def.requires||[]).filter(k=>!this.worldClues?.has(k));
-            objective.textContent=missing.length?(cn()?`冥器已发现 · 继续寻找环境线索 ${missing.length}/${def.requires.length}`:`Relic found · ${missing.length} environmental clues remain`):(cn()?'冥器已发现 · 前往墓道机关解谜':'Relic found · solve the passage mechanism');
+            if(this.lvl<=3)objective.textContent=cn()?'冥器上的纹路似乎另有所指':'The relic markings seem to correspond to something nearby';
+            else objective.textContent=missing.length?(cn()?'冥器已发现 · 仍有环境线索未明':'Relic found · some environmental clues remain'):(cn()?'冥器已发现 · 寻找与纹样对应的机关':'Relic found · find a mechanism matching the markings');
         } else {
             objective.textContent=cn()?'墓道机关已解 · 前往开启的盗洞':'Mechanism solved · enter the opened passage';
         }
@@ -236,7 +300,7 @@
         if(d.type==='sequence')this.puzzleState=[];
         else if(d.type==='cycle')this.puzzleState=d.start.slice();
         else if(d.type==='permute')this.puzzleState={values:d.start.slice(),selected:null};
-        else if(d.type==='orientation')this.puzzleState=d.faces.map(()=>0);
+        else if(d.type==='orientation')this.puzzleState=d.start?d.start.slice():d.faces.map(()=>0);
         else if(d.type==='composite')this.puzzleState={direction:null,symbol:null,order:[]};
     };
 
@@ -264,11 +328,12 @@
     };
 
     Game.renderPuzzle=function(){
-        const d=puzzleFor(),a=ARTIFACTS[this.lvl-1],board=document.getElementById('puzzle-board');
+        const d=puzzleFor(),a=ARTIFACTS[this.lvl-1],board=document.getElementById('puzzle-board'),visual=document.getElementById('puzzle-visual');
         const resetButton=document.getElementById('puzzle-reset-btn');
         const submitButton=document.getElementById('puzzle-submit-btn');
         const closeButton=document.getElementById('puzzle-close-btn');
         if(this.relicReview){
+            if(visual)visual.innerHTML=visualHTML(d,true);
             document.getElementById('puzzle-title').textContent=cn()?'冥器线索':'RELIC CLUE';
             document.getElementById('puzzle-relic').textContent=`${a.i||'◆'} ${cn()?a.n:a.en}`;
             document.getElementById('puzzle-clue').textContent=cn()?`${a.d} ${a.end}`:`${a.en}. ${a.end}`;
@@ -283,6 +348,7 @@
         }
         if(resetButton)resetButton.style.display='';
         if(submitButton)submitButton.style.display='';
+        if(visual)visual.innerHTML=visualHTML(d,false);
         document.getElementById('puzzle-title').textContent=cn()?d.title:d.enTitle;
         document.getElementById('puzzle-relic').textContent=`${a.i||'◆'} ${cn()?a.n:a.en}`;
         document.getElementById('puzzle-clue').textContent=cn()?d.clue:d.enClue;
@@ -290,7 +356,7 @@
         const found=req.map(k=>`${k}${this.worldClueValues?.[k]?`→${this.worldClueValues[k]}`:''}`).join('　');
         document.getElementById('puzzle-world-clues').textContent=req.length?(cn()?`环境线索：${found||'尚未发现'}${missing.length?`（缺 ${missing.length}）`:''}`:`World clues: ${found||'none'}${missing.length?` (${missing.length} missing)`:''}`):'';
         document.getElementById('puzzle-feedback').textContent='';
-        const hint=this.puzzleAttempts>=5?d.hint2:this.puzzleAttempts>=3?d.hint1:'';
+        const hint=this.puzzleAttempts>=6?d.hint2:this.puzzleAttempts>=3?d.hint1:'';
         document.getElementById('puzzle-hint').textContent=hint?(cn()?`提示：${hint}`:`Hint: ${hint}`):'';
         const submit=document.getElementById('puzzle-submit-btn');submit.disabled=missing.length>0;
         submit.textContent=cn()?'确认机关':'CONFIRM';
@@ -299,7 +365,7 @@
 
         if(d.type==='sequence'){
             const sel=this.puzzleState||[];
-            const ring=d.ring?`<div class="puzzle-ring">月痕 ◀ ${d.ring.join(' · ')} ↺</div>`:'';
+            const ring=d.ring?`<div class="puzzle-ring">月痕 · ${d.startBeast||''} · ${d.reverse?'↺':'↻'} · ${d.ring.join(' · ')}</div>`:'';
             const legend=d.legend?`<div class="puzzle-legend">${d.legend}</div>`:'';
             board.innerHTML=`${ring}${legend}<div class="puzzle-options">${d.options.map(o=>`<button data-puzzle="sequence" data-value="${o}" class="${sel.includes(o)?'chosen':''}">${o}</button>`).join('')}</div><div class="puzzle-selection">${cn()?'当前':'Selected'}：${sel.join(' → ')||'—'}</div>`;
         } else if(d.type==='cycle'){
@@ -348,7 +414,7 @@
         this.puzzleAttempts++;
         if(this.p.hp>1){this.p.hp--;this.p.inv=1;AudioSys.playHurt();this.shake=8;this.updateHUD();}
         document.getElementById('puzzle-feedback').textContent=cn()?'机关错位，墓中传来危险的机括声。':'Wrong setting. A dangerous mechanism answers from inside the tomb.';
-        if(this.puzzleAttempts===3||this.puzzleAttempts===5)setTimeout(()=>{if(document.getElementById('puzzle-modal').classList.contains('active'))this.renderPuzzle();},350);
+        if(this.puzzleAttempts===3||this.puzzleAttempts===6)setTimeout(()=>{if(document.getElementById('puzzle-modal').classList.contains('active'))this.renderPuzzle();},350);
     };
 
     Game.solvePuzzle=function(){
