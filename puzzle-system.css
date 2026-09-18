@@ -114,3 +114,60 @@
     color:#9fc3b7;
 }
 #relic-btn[hidden] { display:none !important; }
+
+
+#puzzle-visual {
+    min-height:96px;
+    margin:10px auto 14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    max-width:560px;
+}
+#puzzle-visual > div {
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+    flex-wrap:wrap;
+    padding:14px;
+    border:1px solid rgba(184,154,95,.24);
+    border-radius:8px;
+    background:radial-gradient(circle at 50% 30%,rgba(118,91,48,.12),rgba(5,8,7,.42));
+}
+#puzzle-visual span {
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:42px;
+    min-height:42px;
+    padding:7px;
+    border:1px solid #675a43;
+    border-radius:50%;
+    background:#191d18;
+    color:#bda878;
+    font-family:serif;
+}
+#puzzle-visual span.lit { border-color:#9fd9c7; color:#dff7ef; box-shadow:0 0 18px rgba(119,201,175,.28); }
+#puzzle-visual span.scar { border-color:#9c403b; color:#d16359; box-shadow:0 0 15px rgba(145,48,43,.25); }
+#puzzle-visual b { display:block; position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); white-space:nowrap; font:10px/1 sans-serif; color:#9c9484; }
+#puzzle-visual i { color:#7d715a; font-style:normal; }
+.compass-figure { display:grid !important; grid-template-columns:repeat(4,1fr); max-width:330px; }
+.compass-figure span { border-radius:5px !important; }
+.sun-figure span,.env-figure span { min-width:62px !important; border-radius:10px !important; }
+.fish-figure span.black { background:#0d0f0d !important; color:#e5ddc8 !important; }
+.fish-figure span.white { background:#d8d1bb !important; color:#181b17 !important; }
+.visual-nine { display:grid !important; grid-template-columns:repeat(3,1fr); max-width:310px; }
+.visual-nine span { border-radius:5px !important; min-height:62px !important; font-size:8px; letter-spacing:2px; word-break:break-all; }
+.beast-figure,.phase-figure { max-width:390px; }
+.star-figure span { border-radius:4px !important; font-size:22px; }
+.face-figure span,.seal-figure span { border-radius:7px !important; font-size:22px; }
+.mechanism-figure span { opacity:.72; font-size:24px; }
+@media (max-width:600px) {
+    #puzzle-visual { min-height:82px; }
+    #puzzle-visual > div { padding:10px 7px; gap:6px; }
+    #puzzle-visual span { min-width:36px; min-height:36px; padding:5px; }
+    .compass-figure { grid-template-columns:repeat(4,1fr); }
+}
