@@ -60,10 +60,10 @@
         if(this.p.breathing&&!t.breath){t.breath=true;coach.hide('breath');}
         const revealed=Game.entitiesOf('trap').some(e=>e.revealed&&!e.dead);
         if(revealed&&!t.trap){t.trap=true;coach.show('trap','机关一旦显露就不会重新隐藏。石碑、石柱可挡住直线射击。','Revealed traps stay visible. Steles and columns block straight projectiles.',7);}
-        if(this.relicCollected&&!t.relic){t.relic=true;coach.show('relic','冥器只是线索，不会自动开门。前往墓道机关，根据器物线索解谜。','The relic is a clue, not a key. Reach the passage mechanism and solve it.',7);}
+        if(this.relicCollected&&!t.relic){t.relic=true;coach.show('relic','冥器上的纹路不像装饰。先记住它的图像，再观察墓室里有没有相似结构。','The markings are not decoration. Remember the image and look for a matching structure in the tomb.',7);}
         if(coach.active&&(Game.elapsed||0)>coach.until)coach.hide();
     };
 
     const baseUpdateUI=Game.updateUI.bind(Game);
-    Game.updateUI=function(){baseUpdateUI();if(coach.active){const el=document.getElementById('context-tutorial');if(el){const map={shovel:['洛阳铲已收入物品栏。靠近尸祟会自动挥铲，不需要攻击按钮。','Shovel stored. Move close to a threat to attack automatically.'],breath:['遇到尸祟时可按“屏气”。你仍能缓慢移动，尸祟会先停住，再退回棺中。','Hold Breath near undead: you can still move slowly while they lose you and return to a coffin.'],trap:['机关一旦显露就不会重新隐藏。石碑、石柱可挡住直线射击。','Revealed traps stay visible. Steles and columns block straight projectiles.'],relic:['冥器只是线索，不会自动开门。前往墓道机关，根据器物线索解谜。','The relic is a clue, not a key. Reach the passage mechanism and solve it.']};const v=map[coach.active];if(v)el.textContent=curLang==='CN'?v[0]:v[1];}}};
+    Game.updateUI=function(){baseUpdateUI();if(coach.active){const el=document.getElementById('context-tutorial');if(el){const map={shovel:['洛阳铲已收入物品栏。靠近尸祟会自动挥铲，不需要攻击按钮。','Shovel stored. Move close to a threat to attack automatically.'],breath:['遇到尸祟时可按“屏气”。你仍能缓慢移动，尸祟会先停住，再退回棺中。','Hold Breath near undead: you can still move slowly while they lose you and return to a coffin.'],trap:['机关一旦显露就不会重新隐藏。石碑、石柱可挡住直线射击。','Revealed traps stay visible. Steles and columns block straight projectiles.'],relic:['冥器上的纹路不像装饰。先记住它的图像，再观察墓室里有没有相似结构。','The markings are not decoration. Remember the image and look for a matching structure in the tomb.']};const v=map[coach.active];if(v)el.textContent=curLang==='CN'?v[0]:v[1];}}};
 })();
