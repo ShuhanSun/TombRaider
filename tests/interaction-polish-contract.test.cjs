@@ -23,7 +23,7 @@ test('first floor teaches shovel auto attack, breath, trap cover and relic puzzl
     for(const key of ["'shovel'","'breath'","'trap'","'relic'"]) assert.match(src,new RegExp(key));
     assert.match(src,/不需要攻击按钮/);
     assert.match(src,/石碑、石柱可挡住直线射击/);
-    assert.match(src,/冥器只是线索，不会自动开门/);
+    assert.match(src,/冥器上的纹路不像装饰/);
     assert.match(src,/this\.lvl!==1/);
 });
 
